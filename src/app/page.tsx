@@ -1,19 +1,20 @@
 import React from 'react';
 import Link from 'next/link';
-import Header from '../components/Header';
-// On a retiré l'import du Footer pour éviter le doublon
+// Nous avons retiré l'import de Header car le Menu Burger est maintenant géré par layout.tsx
 
 export default function Home() {
   return (
     <>
-      {/* On garde le Header manuel car il avait disparu sinon */}
-      <Header />
+      {/* Le Header est désormais géré automatiquement par le fichier layout.tsx pour être responsive */}
       
-      <main className="min-h-screen bg-[#050507] text-white overflow-hidden selection:bg-blue-500/30">
+      <main className="min-h-screen bg-[#050507] text-white overflow-x-hidden selection:bg-blue-500/30">
         
         {/* --- SECTION 1 : HERO --- */}
-        <section className="relative pt-32 pb-20 px-4 sm:px-6 lg:px-8">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-blue-600/20 blur-[120px] rounded-full opacity-20 pointer-events-none" />
+        {/* Ajustement padding: pt-24 sur mobile, pt-32 sur PC pour éviter que le texte soit sous le menu */}
+        <section className="relative pt-24 pb-12 lg:pt-32 lg:pb-20 px-4 sm:px-6 lg:px-8">
+          
+          {/* Correction du blob lumineux pour qu'il ne dépasse pas sur mobile (max-w instead of fixed width) */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[1000px] h-[500px] bg-blue-600/20 blur-[120px] rounded-full opacity-20 pointer-events-none" />
           
           <div className="max-w-4xl mx-auto text-center relative z-10">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-medium text-blue-400 mb-8 hover:bg-white/10 transition-colors cursor-default">
@@ -24,7 +25,8 @@ export default function Home() {
               CERTIFICATION D'ANTÉRIORITÉ
             </div>
             
-            <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-8">
+            {/* Taille de texte ajustée pour mobile (text-4xl) et PC (text-7xl) */}
+            <h1 className="text-4xl md:text-7xl font-bold tracking-tight mb-8">
               Vos idées valent de l'or. <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500">
                 Prouvez qu'elles sont à vous.
@@ -55,6 +57,7 @@ export default function Home() {
               Infrastructures certifiées & Normes de sécurité
             </p>
             
+            {/* Flex-wrap permet aux logos de passer à la ligne sur mobile */}
             <div className="flex flex-wrap justify-center items-center gap-y-6 gap-x-8 md:gap-x-12">
               
               {/* 1. POLYGON */}
@@ -98,7 +101,7 @@ export default function Home() {
         </div>
 
         {/* --- SECTION 3 : FEATURES --- */}
-        <section className="py-24 relative">
+        <section className="py-16 md:py-24 relative">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid md:grid-cols-3 gap-8">
               {/* Feature 1 */}
@@ -151,8 +154,6 @@ export default function Home() {
         </section>
 
       </main>
-      
-      {/* Footer supprimé ici car déjà présent dans le layout global */}
     </>
   );
 }

@@ -9,12 +9,7 @@ import { join } from 'path';
 async function logAudit(userId: string, action: string, status: string, details: string) {
   try {
     await prisma.auditLog.create({
-      data: {
-        userId,
-        action,
-        status,
-        details
-      }
+      data: { userId, action, status, details }
     });
   } catch (e) {
     console.error("⚠️ Impossible d'écrire le log:", e);
@@ -23,14 +18,15 @@ async function logAudit(userId: string, action: string, status: string, details:
 
 // --- ACTION 1 : RÉCUPÉRER LES PREUVES ---
 export async function getUserProofs() {
-  const user = await currentUser();
-  if (!user) return [];
-
   try {
+    const user = await currentUser();
+    if (!user) return [];
+
     const proofs = await prisma.proof.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: 'desc' }
     });
+    
     return proofs.map(p => ({
       ...p,
       created_at: p.createdAt.toISOString(),
@@ -43,69 +39,87 @@ export async function getUserProofs() {
   }
 }
 
-// --- ACTION 2 : CRÉER UNE PREUVE (SANS IA) ---
+// --- ACTION 2 : CRÉER UNE PREUVE ---
 export async function createProofAction(formData: FormData) {
-  const user = await currentUser();
-  if (!user) return { success: false, error: "Non connecté" };
-
-  const file = formData.get('file') as File;
-  const fileHash = formData.get('fileHash') as string;
+  console.log("🚀 [Server] Démarrage createProofAction...");
   
-  // 1. Sync User
-  await prisma.user.upsert({
-    where: { id: user.id },
-    update: { email: user.emailAddresses[0]?.emailAddress },
-    create: { id: user.id, email: user.emailAddresses[0]?.emailAddress || 'no-email', credits: 0 }
-  });
-
   try {
-      // 2. Check Doublon
-      const existing = await prisma.proof.findFirst({
-        where: { userId: user.id, fileHash: fileHash }
-      });
-      
-      if (existing) {
-        await logAudit(user.id, "UPLOAD_DUPLICATE", "WARN", `Doublon: ${file.name}`);
-        return { success: false, error: "Fichier déjà protégé." };
+    // 1. Vérification Utilisateur
+    const user = await currentUser();
+    if (!user) {
+        console.log("❌ [Server] Pas d'utilisateur connecté");
+        return { success: false, error: "Non connecté" };
+    }
+
+    // 2. Récupération des données
+    const file = formData.get('file') as File;
+    const fileHash = formData.get('fileHash') as string;
+    
+    if (!file || !fileHash) {
+        return { success: false, error: "Données manquantes (Fichier ou Hash)" };
+    }
+
+    console.log(`📂 [Server] Fichier reçu: ${file.name} (${file.size} bytes)`);
+
+    // 3. Sync User (Si ça échoue ici, c'est la BDD)
+    await prisma.user.upsert({
+      where: { id: user.id },
+      update: { email: user.emailAddresses[0]?.emailAddress },
+      create: { id: user.id, email: user.emailAddresses[0]?.emailAddress || 'no-email', credits: 0 }
+    });
+
+    // 4. Check Doublon
+    const existing = await prisma.proof.findFirst({
+      where: { userId: user.id, fileHash: fileHash }
+    });
+    
+    if (existing) {
+      await logAudit(user.id, "UPLOAD_DUPLICATE", "WARN", `Doublon: ${file.name}`);
+      return { success: false, error: "Ce fichier est déjà protégé." };
+    }
+
+    // 5. Sauvegarde Physique (Disque)
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    const uploadDir = join(process.cwd(), 'uploads');
+    
+    // On s'assure que le dossier existe
+    await mkdir(uploadDir, { recursive: true });
+    
+    const uniqueName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+    const filePath = join(uploadDir, uniqueName);
+    
+    await writeFile(filePath, buffer);
+    console.log(`💾 [Server] Fichier écrit sur le disque: ${uniqueName}`);
+
+    // 6. Enregistrement BDD
+    const newProof = await prisma.proof.create({
+      data: {
+        userId: user.id,
+        filename: file.name,
+        fileHash: fileHash,
+        fileSize: file.size,
+        mimeType: file.type,
+        status: 'PROTECTED',
+        storagePath: uniqueName,
+        tags: []
       }
-
-      // 3. Sauvegarde Physique
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-      const uploadDir = join(process.cwd(), 'uploads');
-      await mkdir(uploadDir, { recursive: true });
-      
-      const uniqueName = `${Date.now()}-${file.name}`;
-      await writeFile(join(uploadDir, uniqueName), buffer);
-
-      // 4. Enregistrement BDD
-      const newProof = await prisma.proof.create({
-        data: {
-          userId: user.id,
-          filename: file.name,
-          fileHash: fileHash,
-          fileSize: file.size,
-          mimeType: file.type,
-          status: 'PROTECTED',
-          storagePath: uniqueName,
-          tags: []
-        }
-      });
-      
-      // 5. Log Succès
-      await logAudit(user.id, "UPLOAD_SUCCESS", "OK", `Fichier: ${file.name} | ID: ${newProof.id}`);
-      return { success: true, id: newProof.id };
+    });
+    
+    // 7. Log Succès
+    await logAudit(user.id, "UPLOAD_SUCCESS", "OK", `Fichier: ${file.name} | ID: ${newProof.id}`);
+    console.log("✅ [Server] Succès total");
+    
+    return { success: true, id: newProof.id };
 
   } catch (e: any) {
-    console.error("💥 Erreur Serveur:", e);
-    await logAudit(user.id, "UPLOAD_ERROR", "KO", `Erreur: ${e.message}`);
-    return { success: false, error: "Erreur technique." };
+    console.error("💥 [Server] Erreur CRITIQUE:", e);
+    // On renvoie une erreur propre au lieu de planter
+    return { success: false, error: e.message || "Erreur serveur interne" };
   }
 }
 
-// --- FIX CORRECT POUR LE BUILD ---
+// --- ACTION POUR LE BUILD ---
 export async function searchProofsAction(formData: any) {
-  'use server';
-  // On renvoie un objet avec success: true et results vide
   return { success: true, results: [] };
 }

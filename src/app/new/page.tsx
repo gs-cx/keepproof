@@ -4,7 +4,6 @@ import { useUser } from "@clerk/nextjs";
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-// 👇 L'IMPORT CRITIQUE EST ICI 👇
 import { createProofAction } from "../actions";
 
 export default function NewProofPage() {
@@ -19,6 +18,7 @@ export default function NewProofPage() {
     setMsg("Analyse et sécurisation...");
 
     try {
+        // 1. Calcul du Hash (Local)
         const buffer = await selectedFile.arrayBuffer();
         const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
         const hashArray = Array.from(new Uint8Array(hashBuffer));
@@ -30,8 +30,13 @@ export default function NewProofPage() {
 
         setMsg("Écriture sur le disque du serveur...");
 
-        // 👇 C'EST ICI QUE ÇA PLANTAIT AVANT 👇
+        // 2. Appel Serveur
         const result = await createProofAction(formData);
+
+        // 3. Vérification de la réponse (C'est ici que ça plantait)
+        if (!result) {
+            throw new Error("Le serveur n'a renvoyé aucune réponse.");
+        }
 
         if (!result.success) {
             alert("Erreur: " + result.error);
@@ -41,12 +46,15 @@ export default function NewProofPage() {
         }
 
         setMsg("Sauvegarde terminée !");
+        
+        // Redirection vers le tableau de bord
         router.push('/dashboard');
 
     } catch (e: any) {
         console.error(e);
-        alert("Erreur technique: " + e.message);
+        alert("Erreur technique: " + (e.message || "Inconnue"));
         setIsComputing(false);
+        setMsg("Erreur. Réessayez.");
     }
   };
 

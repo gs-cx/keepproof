@@ -1,7 +1,5 @@
 import React from 'react';
 import { Metadata } from 'next';
-import Header from '@/components/Header';
-// Footer retiré car géré par layout.tsx
 import Breadcrumb from '@/components/Breadcrumb';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -38,12 +36,13 @@ const solutionsData: Record<string, { title: string; desc: string; keywords: str
   }
 };
 
+// RETOUR A LA VERSION SYNCHRONE (Next.js 14)
 type Props = {
-  params: { slug: string }
+  params: { slug: string };
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const slug = params.slug;
+  const { slug } = params; // Pas de await ici
   const data = solutionsData[slug];
 
   if (!data) return { title: 'Solution non trouvée' };
@@ -61,14 +60,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default function SolutionPage({ params }: Props) {
-  const { slug } = params;
+  const { slug } = params; // Pas de await ici
   const data = solutionsData[slug];
 
   if (!data) return notFound();
 
   return (
     <>
-      <Header />
       <div className="min-h-screen bg-[#050507] text-white pt-32 px-6 pb-20 selection:bg-blue-500/30">
         <div className="max-w-4xl mx-auto">
           
@@ -132,7 +130,6 @@ export default function SolutionPage({ params }: Props) {
 
         </div>
       </div>
-      {/* Footer automatique via layout */}
     </>
   );
 }

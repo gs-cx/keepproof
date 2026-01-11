@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    // On ajoute 'chromadb' et 'onnxruntime-node' pour empêcher l'erreur de compilation des binaires
+    // En Next.js 14, cette option doit être dans 'experimental'
     serverComponentsExternalPackages: ['pdf-lib', '@xenova/transformers', 'chromadb', 'onnxruntime-node'],
   },
   webpack: (config) => {

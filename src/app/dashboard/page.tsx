@@ -2,8 +2,7 @@
 import { useUser } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Header from "@/components/Header";
-// Import Footer retiré pour éviter le doublon
+// Import Header retiré car géré par layout.tsx
 import { getUserProofs } from "../actions";
 
 interface Folder { id: string; name: string; }
@@ -49,9 +48,9 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[#050507] text-white flex flex-col font-sans">
-      <Header />
+      {/* Header retiré ici */}
       
-      <div className="flex flex-1 flex-col md:flex-row pt-20 px-4 max-w-[1600px] mx-auto w-full gap-8">
+      <div className="flex flex-1 flex-col md:flex-row pt-10 px-4 max-w-[1600px] mx-auto w-full gap-8">
         
         {/* --- NAVIGATION (Mobile: Horizontal Scroll | Desktop: Sidebar) --- */}
         <aside className="w-full md:w-64 flex-shrink-0">
@@ -150,7 +149,7 @@ export default function Dashboard() {
         </button>
 
       </div>
-      {/* Footer supprimé ici */}
+      {/* Footer automatique via layout */}
     </div>
   );
 }
