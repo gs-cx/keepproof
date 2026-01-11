@@ -1,122 +1,86 @@
-// --- 📚 BASE DE DONNÉES JURIDIQUE EXPERTE (VERSION MAX) ---
-// Contient : Civil, Pénal, CPI, Commerce, RGPD, eIDAS.
-
-export const legalCorpus = [
-  // =================================================================
-  // 1. LA PREUVE NUMÉRIQUE (CODE CIVIL)
-  // =================================================================
+export const LEGAL_KNOWLEDGE_BASE = [
+  // --- SECTION JURIDIQUE & LÉGALE ---
   {
-    id: "civil_1366",
-    source: "Code Civil - Article 1366 (Ex-1316-1)",
-    themes: ["ecrit", "numerique", "electronique", "valeur", "force", "probante", "egalite", "papier"],
-    text_officiel: "L'écrit électronique a la même force probante que l'écrit sur support papier, sous réserve que puisse être dûment identifiée la personne dont il émane et qu'il soit établi et conservé dans des conditions de nature à en garantir l'intégrité.",
-    explication: "C'est la pierre angulaire. Un fichier numérique vaut autant qu'un papier signé si vous prouvez deux choses : l'identité (c'est bien vous) et l'intégrité (le fichier n'a pas bougé). KeepProof garantit cette intégrité via le hachage cryptographique."
+    category: "Juridique",
+    topic: "Valeur légale et recevabilité en justice",
+    content: `La preuve générée par KeepProof est juridiquement recevable en France et en Europe. Elle repose sur deux piliers : 
+    1. L'article 1366 du Code civil français, qui accorde à l'écrit électronique la même force probante que l'écrit papier, sous réserve que l'on puisse identifier l'auteur et garantir l'intégrité de l'acte.
+    2. Le règlement européen eIDAS (n°910/2014), qui interdit aux juges de refuser une preuve au seul motif qu'elle est électronique.
+    En cas de litige, le certificat KeepProof fournit une date certaine et une preuve d'intégrité (via le Hash) qui sont opposables aux tiers.`
   },
   {
-    id: "civil_1367",
-    source: "Code Civil - Article 1367",
-    themes: ["signature", "fiabilite", "presomption", "identite", "signe"],
-    text_officiel: "La signature électronique consiste en l'usage d'un procédé fiable d'identification garantissant son lien avec l'acte auquel elle s'attache. La fiabilité de ce procédé est présumée jusqu'à preuve contraire.",
-    explication: "L'ancrage Blockchain associé à votre compte utilisateur constitue un faisceau d'indices fiable pour signer votre antériorité sur une œuvre."
+    category: "Juridique",
+    topic: "Différence entre Droit d'auteur et Dépôt",
+    content: `En France (et dans les 179 pays de la Convention de Berne), le droit d'auteur naît automatiquement dès la création de l'œuvre. Vous n'avez pas besoin de "déposer" pour être protégé.
+    Cependant, le problème est la PREUVE. Si quelqu'un vous copie, vous devez prouver que vous étiez le premier. C'est là que KeepProof intervient : nous ne créons pas le droit (il existe déjà), mais nous créons la PREUVE irréfutable de l'antériorité de votre création à une date précise.`
   },
   {
-    id: "civil_1358",
-    source: "Code Civil - Article 1358",
-    themes: ["liberte", "moyen", "tous", "moyens", "element", "admissible"],
-    text_officiel: "Hors les cas où la loi en dispose autrement, la preuve peut être apportée par tout moyen.",
-    explication: "Ce principe de 'liberté de la preuve' est crucial. Même si la Blockchain n'est pas citée nommément dans une vieille loi, l'article 1358 permet à un juge d'accepter une preuve Blockchain comme un élément factuel valide."
-  },
-  {
-    id: "civil_1368",
-    source: "Code Civil - Article 1368",
-    themes: ["contrat", "accord", "convention", "litige", "parties"],
-    text_officiel: "Les parties peuvent convenir par écrit des règles de preuve.",
-    explication: "Si vous mettez dans vos CGV (Conditions Générales de Vente) que 'Les registres informatisés de KeepProof font foi entre les parties', cela devient la loi des parties. Très utile pour vos contrats clients."
+    category: "Comparatif",
+    topic: "KeepProof vs Enveloppe Soleau vs Notaire",
+    content: `
+    - Enveloppe Soleau (INPI) : Coûte 15€, limitée à 7 pages, valable 5 ans (renouvelable 1 fois). Pas de fichier numérique lourd (vidéo/code).
+    - Notaire / Huissier : Très fort juridiquement, mais coûteux (200€ à 500€ le constat) et lent.
+    - KeepProof : Instantané, coûte quelques crédits, permet de protéger des fichiers lourds (vidéo, son, ZIP de code source) et la preuve est valable à vie grâce à la Blockchain, sans renouvellement payant.`
   },
 
-  // =================================================================
-  // 2. PROPRIÉTÉ INTELLECTUELLE (DROIT D'AUTEUR)
-  // =================================================================
+  // --- SECTION TECHNIQUE & SÉCURITÉ (ZERO KNOWLEDGE) ---
   {
-    id: "cpi_l111_1",
-    source: "Code Propriété Intellectuelle - L.111-1",
-    themes: ["auteur", "droit", "creation", "esprit", "automatique", "depot", "formalite"],
-    text_officiel: "L'auteur d'une œuvre de l'esprit jouit sur cette œuvre, du seul fait de sa création, d'un droit de propriété incorporelle exclusif et opposable à tous.",
-    explication: "En France, le dépôt n'est pas obligatoire pour être protégé (contrairement au brevet). La protection naît dès que vous créez. MAIS en cas de vol, vous devez prouver la date de cette création. C'est à ça que sert KeepProof : matérialiser cette date."
+    category: "Sécurité",
+    topic: "Confidentialité et Zero-Knowledge (Stockage des fichiers)",
+    content: `C'est le point fort de KeepProof : nous sommes en architecture "Zero-Knowledge".
+    Concrètement : Votre fichier original ne quitte JAMAIS votre ordinateur ou votre navigateur vers nos serveurs de stockage définitif.
+    1. Votre navigateur calcule l'empreinte numérique (Hash SHA-256) du fichier localement.
+    2. Seule cette empreinte (une suite de chiffres et lettres) est envoyée à KeepProof pour être ancrée dans la Blockchain.
+    3. Nous ne pouvons pas voir, lire, ou voler vos idées car nous ne possédons mathématiquement pas le fichier source. Vous restez le seul gardien de vos secrets.`
   },
   {
-    id: "cpi_l112_2",
-    source: "Code Propriété Intellectuelle - L.112-2",
-    themes: ["liste", "quoi", "protege", "livre", "musique", "logiciel", "photo", "plan", "carte", "mode", "design"],
-    text_officiel: "Sont considérés comme œuvres de l'esprit : les livres, conférences, œuvres dramatiques, chorégraphiques, compositions musicales, œuvres cinématographiques, de dessin, de peinture, d'architecture, de sculpture, les logiciels, les créations de mode...",
-    explication: "Cette liste prouve que KeepProof peut tout protéger : du code source d'un logiciel aux plans d'architecte, en passant par des croquis de mode ou des chansons."
+    category: "Technique",
+    topic: "Qu'est-ce qu'un Hash (Empreinte numérique) ?",
+    content: `Le Hash (SHA-256) est l'ADN numérique de votre fichier. C'est une fonction mathématique à sens unique.
+    - Si vous modifiez une seule virgule ou un seul pixel de votre fichier, le Hash change totalement.
+    - Il est impossible de "deviner" le fichier original à partir du Hash.
+    C'est ce qui garantit l'intégrité : si le Hash sur la Blockchain correspond au Hash de votre fichier actuel, alors le fichier n'a pas été modifié depuis la date du dépôt.`
   },
   {
-    id: "cpi_l113_1",
-    source: "Code Propriété Intellectuelle - L.113-1",
-    themes: ["presomption", "titulaire", "nom", "divulgation"],
-    text_officiel: "La qualité d'auteur appartient, sauf preuve contraire, à celui sous le nom duquel l'œuvre est divulguée.",
-    explication: "Si vous publiez une œuvre, on présume que c'est la vôtre. Mais si quelqu'un dit 'non c'est moi', c'est celui qui a la preuve la plus ancienne qui gagne. D'où l'importance d'un ancrage Blockchain antérieur à la publication."
-  },
-
-  // =================================================================
-  // 3. CONTREFACON & SANCTIONS (PÉNAL)
-  // =================================================================
-  {
-    id: "cpi_l335_2",
-    source: "Code Propriété Intellectuelle - L.335-2",
-    themes: ["contrefacon", "delit", "copie", "plagiat", "sanction", "prison", "amende", "voler"],
-    text_officiel: "Toute édition d'écrits, de composition musicale, de dessin [...] au mépris des lois et règlements relatifs à la propriété des auteurs, est une contrefaçon. La contrefaçon est un délit.",
-    explication: "Copier votre travail n'est pas juste 'pas sympa', c'est un délit pénal. Avec une preuve d'antériorité, vous pouvez menacer le contrefacteur de poursuites pénales."
-  },
-  {
-    id: "cpi_l335_3",
-    source: "Code Propriété Intellectuelle - L.335-3",
-    themes: ["logiciel", "code", "piratage", "reproduction"],
-    text_officiel: "Est également un délit de contrefaçon toute reproduction, représentation ou diffusion, par quelque moyen que ce soit, d'une œuvre de l'esprit en violation des droits de l'auteur.",
-    explication: "Cela s'applique aussi spécifiquement au piratage de logiciels ou à la copie de code source sans licence."
-  },
-  {
-    id: "penal_323_1",
-    source: "Code Pénal - Article 323-1",
-    themes: ["intrusion", "systeme", "hacker", "acces", "donnees", "fraude"],
-    text_officiel: "Le fait d'accéder ou de se maintenir, frauduleusement, dans tout ou partie d'un système de traitement automatisé de données est puni de deux ans d'emprisonnement et de 60 000 euros d'amende.",
-    explication: "Si quelqu'un vole vos fichiers en piratant votre ordinateur avant que vous ne les ayez publiés, c'est une intrusion. La preuve d'antériorité permet de montrer que vous aviez les données avant l'attaque."
+    category: "Technique",
+    topic: "Fonctionnement de la Blockchain Polygon",
+    content: `Nous utilisons la Blockchain publique Polygon (compatible Ethereum). Contrairement à une base de données privée (qui pourrait être falsifiée par l'administrateur), la Blockchain est un registre public, décentralisé et immuable.
+    Une fois votre preuve ancrée dans un bloc, elle y est gravée pour toujours. Personne, pas même l'équipe de KeepProof, ne peut revenir en arrière pour changer la date ou le contenu.`
   },
 
-  // =================================================================
-  // 4. CONCURRENCE & SECRET DES AFFAIRES
-  // =================================================================
+  // --- SECTION "SCÉNARIOS CATASTROPHES" (RASSURANCE) ---
   {
-    id: "civil_1240",
-    source: "Code Civil - Article 1240 (Concurrence Déloyale)",
-    themes: ["concurrence", "deloyale", "parasitisme", "dommage", "reparer", "idee", "concept"],
-    text_officiel: "Tout fait quelconque de l'homme, qui cause à autrui un dommage, oblige celui par la faute duquel il est arrivé à le réparer.",
-    explication: "Si votre création n'est pas une 'œuvre de l'esprit' (ex: un concept commercial ou une idée brute), le droit d'auteur ne joue pas. MAIS vous pouvez attaquer pour 'Concurrence Déloyale' ou 'Parasitisme'. Pour gagner, il faut prouver que vous avez eu l'idée en premier : KeepProof sert à ça."
+    category: "Rassurance",
+    topic: "Que se passe-t-il si KeepProof fait faillite ?",
+    content: `C'est la force de la technologie Blockchain décentralisée : votre preuve survit à l'entreprise KeepProof.
+    Comme la preuve est ancrée sur la Blockchain publique (Polygon) et non sur nos serveurs privés :
+    1. Vous conservez votre certificat (PDF) et votre fichier original.
+    2. Même si le site web KeepProof.com disparaît, vous pouvez utiliser n'importe quel outil de vérification Blockchain public (comme Etherscan ou des outils open-source) pour prouver que votre Hash a bien été enregistré à la date indiquée. Vous ne dépendez pas de nous pour la validité de votre preuve dans le temps.`
   },
   {
-    id: "commerce_l151_1",
-    source: "Code de Commerce - L.151-1 (Secret des Affaires)",
-    themes: ["secret", "affaires", "business", "confidenciel", "savoir-faire", "know-how"],
-    text_officiel: "Est protégé au titre du secret des affaires tout renseignement qui n'est pas généralement connu, qui a une valeur commerciale parce qu'il est secret, et qui fait l'objet de mesures de protection raisonnables.",
-    explication: "KeepProof permet de prouver que vous déteniez un savoir-faire secret à une date donnée, sans avoir à le révéler publiquement (puisque seul le hash est publié). C'est une 'mesure de protection raisonnable' au sens de la loi."
+    category: "Utilisation",
+    topic: "Durée de validité de la preuve",
+    content: `La validité est illimitée dans le temps (A vie et au-delà). Tant que la technologie cryptographique (SHA-256) et la Blockchain existent, la preuve est mathématiquement vérifiable. Contrairement à un brevet (20 ans) ou une marque (10 ans renouvelables), le droit d'auteur et sa preuve d'antériorité n'expirent pas tant que l'œuvre n'est pas tombée dans le domaine public (70 ans après la mort de l'auteur).`
   },
 
-  // =================================================================
-  // 5. EUROPE & INTERNATIONAL (eIDAS / RGPD)
-  // =================================================================
+  // --- SECTION CAS D'USAGE ---
   {
-    id: "eidas_25",
-    source: "Règlement UE eIDAS - Article 25",
-    themes: ["europe", "eidas", "recevable", "justice", "international", "refus"],
-    text_officiel: "L'effet juridique et la recevabilité d'une signature électronique comme preuve en justice ne peuvent être refusés au seul motif que cette signature se présente sous une forme électronique.",
-    explication: "C'est le principe de non-discrimination. Une preuve numérique KeepProof a la même recevabilité potentielle qu'un document papier dans toute l'Union Européenne."
+    category: "Cas d'usage",
+    topic: "Que peut-on protéger ?",
+    content: `Tout fichier numérique peut être protégé :
+    - Créatifs : Logos, designs UX/UI, photos HD, maquettes.
+    - Musique & Audio : Pistes WAV, compositions, paroles.
+    - Tech : Code source (fichiers .js, .py, ou archives .zip), algorithmes.
+    - Business : Business plans, concepts de startup, contrats confidentiels, bases de données clients.
+    - Recherche : Thèses, découvertes scientifiques avant publication.`
   },
   {
-    id: "rgpd_5",
-    source: "RGPD - Article 5 (Minimisation)",
-    themes: ["rgpd", "donnees", "personnelles", "hash", "anonyme", "minimisation"],
-    text_officiel: "Les données à caractère personnel doivent être adéquates, pertinentes et limitées à ce qui est nécessaire au regard des finalités pour lesquelles elles sont traitées.",
-    explication: "La technologie KeepProof est 'Privacy by Design'. En ne stockant que l'empreinte (Hash) et non le fichier, nous respectons le principe de minimisation du RGPD. Le Hash est considéré comme une donnée pseudonymisée."
+    category: "Litige",
+    topic: "Comment utiliser la preuve au tribunal ?",
+    content: `La procédure est standard :
+    1. Vous remettez à votre avocat ou à l'huissier de justice deux éléments : votre fichier original (que vous avez précieusement conservé) et le certificat de preuve KeepProof (PDF).
+    2. L'expert judiciaire calcule le Hash de votre fichier actuel.
+    3. Il vérifie sur la Blockchain que ce Hash a bien été enregistré à la date T.
+    4. La correspondance confirme que vous déteniez ce fichier exact à cette date, prouvant votre antériorité face à la partie adverse.`
   }
 ];
