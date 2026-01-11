@@ -1,0 +1,40 @@
+import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
+import './globals.css'
+
+// Importation de nos nouveaux composants
+import Header from '../components/Header'
+import Footer from '../components/Footer'
+
+const inter = Inter({ subsets: ['latin'] })
+
+export const metadata: Metadata = {
+  title: 'KeepProof - Protégez vos créations',
+  description: 'Certification de fichiers sur la Blockchain',
+}
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <html lang="fr" className="h-full">
+      <body className={`${inter.className} bg-[#050507] text-white min-h-screen flex flex-col`}>
+
+        {/* Le Menu en haut */}
+        <Header />
+
+        {/* Le contenu principal (votre page de drop) */}
+        {/* On ajoute du padding-top (pt-20) pour ne pas être caché sous le header fixe */}
+        <main className="flex-grow pt-20 flex flex-col items-center justify-center p-4">
+          {children}
+        </main>
+
+        {/* Le Pied de page en bas */}
+        <Footer />
+
+      </body>
+    </html>
+  )
+}
