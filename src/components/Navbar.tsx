@@ -32,11 +32,17 @@ export default function Navbar() {
             <Link href="/pricing" className={`${isActive('/pricing')} px-3 py-2 rounded-md font-medium transition-colors`}>
               Tarifs
             </Link>
+            
+            {/* NOUVEAU LIEN BLOG */}
+            <Link href="/blog" className={`${isActive('/blog')} px-3 py-2 rounded-md font-medium transition-colors`}>
+              Blog
+            </Link>
+
             <Link href="/faq" className={`${isActive('/faq')} px-3 py-2 rounded-md font-medium transition-colors`}>
               FAQ
             </Link>
             
-            {/* Nouveau Lien Litige (En rouge et gras) */}
+            {/* Lien Litige (En rouge et gras) */}
             <Link href="/litige" className="text-red-400 hover:text-red-300 px-3 py-2 rounded-md font-bold transition-colors flex items-center gap-2">
                <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
                Litige
@@ -101,6 +107,12 @@ export default function Navbar() {
             <Link href="/pricing" onClick={() => setIsOpen(false)} className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/5">
               Tarifs
             </Link>
+            
+            {/* NOUVEAU LIEN BLOG MOBILE */}
+            <Link href="/blog" onClick={() => setIsOpen(false)} className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/5">
+              Blog
+            </Link>
+
             <Link href="/faq" onClick={() => setIsOpen(false)} className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/5">
               FAQ
             </Link>
