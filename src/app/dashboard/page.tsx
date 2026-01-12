@@ -2,7 +2,6 @@
 import { useUser } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-// Import Header retiré car géré par layout.tsx
 import { getUserProofs } from "../actions";
 
 interface Folder { id: string; name: string; }
@@ -48,19 +47,33 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[#050507] text-white flex flex-col font-sans">
-      {/* Header retiré ici */}
+      {/* Header automatique via layout */}
       
       <div className="flex flex-1 flex-col md:flex-row pt-10 px-4 max-w-[1600px] mx-auto w-full gap-8">
         
         {/* --- NAVIGATION (Mobile: Horizontal Scroll | Desktop: Sidebar) --- */}
-        <aside className="w-full md:w-64 flex-shrink-0">
-            {/* Bouton Desktop */}
-            <button onClick={() => router.push('/new')} className="hidden md:block w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded-xl mb-8 transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)]">
+        <aside className="w-full md:w-64 flex-shrink-0 flex flex-col">
+            {/* Bouton Principal */}
+            <button onClick={() => router.push('/new')} className="hidden md:block w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded-xl mb-6 transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)]">
                 + Nouvelle Preuve
             </button>
+
+            {/* --- NOUVEAU : Lien Litige REMONTÉ EN HAUT --- */}
+            <div className="hidden md:block mb-8">
+                <button 
+                    onClick={() => router.push('/litige')}
+                    className="w-full text-left px-4 py-3 rounded-xl bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white transition-all text-sm font-bold flex items-center justify-between shadow-lg shadow-red-900/40 group border border-red-400/20"
+                >
+                    <span className="flex items-center gap-2"><span>⚖️</span> Guide Litige</span>
+                    <span className="text-white/70 group-hover:text-white transition-colors">→</span>
+                </button>
+                <p className="text-[10px] text-gray-500 mt-2 px-2 leading-tight text-center">
+                    En cas de plagiat ou vol
+                </p>
+            </div>
             
             {/* Menu Desktop */}
-            <nav className="hidden md:block space-y-2">
+            <nav className="hidden md:block space-y-2 flex-1 border-t border-white/5 pt-6">
                 <button onClick={() => setCurrentView('all')} className={`w-full text-left px-4 py-3 rounded-lg transition-all flex items-center gap-3 ${currentView === 'all' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}>
                     <span>📁</span> Tous les fichiers
                 </button>
@@ -78,12 +91,17 @@ export default function Dashboard() {
                 <button onClick={() => setCurrentView('all')} className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold ${currentView === 'all' ? 'bg-blue-600 text-white' : 'bg-white/10 text-gray-400'}`}>
                     📁 Tout
                 </button>
+                
+                {/* Bouton Litige Mobile Mis en avant */}
+                <button onClick={() => router.push('/litige')} className="whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold bg-red-600 text-white shadow-lg border border-red-400/30">
+                    ⚖️ Urgence Litige
+                </button>
+
                 {folders.map(f => (
                     <button key={f.id} onClick={() => setCurrentView(f.id)} className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold ${currentView === f.id ? 'bg-blue-600 text-white' : 'bg-white/10 text-gray-400'}`}>
                         {f.name}
                     </button>
                 ))}
-                <button onClick={createFolder} className="whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold bg-white/5 text-gray-500 border border-white/10 border-dashed">+ Dossier</button>
             </div>
         </aside>
 
@@ -149,7 +167,6 @@ export default function Dashboard() {
         </button>
 
       </div>
-      {/* Footer automatique via layout */}
     </div>
   );
 }

@@ -33,7 +33,13 @@ export default function Navbar() {
               Tarifs
             </Link>
             <Link href="/faq" className={`${isActive('/faq')} px-3 py-2 rounded-md font-medium transition-colors`}>
-              Questions (FAQ)
+              FAQ
+            </Link>
+            
+            {/* Nouveau Lien Litige (En rouge et gras) */}
+            <Link href="/litige" className="text-red-400 hover:text-red-300 px-3 py-2 rounded-md font-bold transition-colors flex items-center gap-2">
+               <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+               Litige
             </Link>
             
             <div className="h-6 w-px bg-white/20 mx-2"></div>
@@ -98,10 +104,13 @@ export default function Navbar() {
             <Link href="/faq" onClick={() => setIsOpen(false)} className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/5">
               FAQ
             </Link>
+            <Link href="/litige" onClick={() => setIsOpen(false)} className="block px-3 py-2 rounded-md text-base font-bold text-red-400 hover:text-red-300 hover:bg-white/5">
+              ⚖️ Guide Litige
+            </Link>
             
             <SignedIn>
                <Link href="/dashboard" onClick={() => setIsOpen(false)} className="block px-3 py-2 rounded-md text-base font-medium text-blue-400 hover:text-blue-300 hover:bg-white/5">
-                  Accéder au Tableau de bord
+                 Accéder au Tableau de bord
                </Link>
             </SignedIn>
 
