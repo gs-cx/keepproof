@@ -1,172 +1,281 @@
-'use client';
-import { useUser } from "@clerk/nextjs";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { getUserProofs } from "../actions";
+"use client";
 
-interface Folder { id: string; name: string; }
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 
-// Icône SVG Téléchargement
-const DownloadIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-);
+// --- TYPES ---
+type Doc = {
+  id: number;
+  name: string;
+  size: string;
+  date: string;
+  hash: string;
+  status: string;
+  folderId?: string; 
+};
+
+type Folder = {
+  id: string;
+  name: string;
+  color: string;
+};
 
 export default function Dashboard() {
-  const { isLoaded, isSignedIn } = useUser();
-  const router = useRouter();
-  
-  const [proofs, setProofs] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [currentView, setCurrentView] = useState<string>('all');
-  
+  // --- ETATS ---
+  const [documents, setDocuments] = useState<Doc[]>([]);
   const [folders, setFolders] = useState<Folder[]>([
-    { id: 'clients', name: 'Projets Clients' },
-    { id: 'admin', name: 'Administratif' }
+    { id: 'clients', name: 'Projets Clients', color: 'bg-purple-500' },
+    { id: 'admin', name: 'Administratif', color: 'bg-emerald-500' }
   ]);
+  const [activeFilter, setActiveFilter] = useState<string>('all'); 
 
+  // --- CHARGEMENT ---
   useEffect(() => {
-    if (isLoaded && isSignedIn) {
-      getUserProofs().then(data => {
-        setProofs(data);
-        setLoading(false);
-      });
+    const savedDocs = localStorage.getItem('keepproof_docs');
+    const demoDocs: Doc[] = [
+      { id: 1, name: "H_18663393.pdf", size: "27 KB", date: "11/01/2026", hash: "0x7f...3a", status: "Certifié", folderId: 'clients' },
+      { id: 2, name: "Lettre AR.pdf", size: "217 KB", date: "09/01/2026", hash: "0x8b...9c", status: "Certifié", folderId: 'admin' },
+    ];
+    
+    if (savedDocs) {
+      setDocuments([...JSON.parse(savedDocs), ...demoDocs]);
+    } else {
+      setDocuments(demoDocs);
     }
-  }, [isLoaded, isSignedIn]);
 
-  const createFolder = () => {
-    const name = window.prompt("Nom du dossier ?");
-    if (name) setFolders([...folders, { id: `f-${Date.now()}`, name }]);
+    const savedFolders = localStorage.getItem('keepproof_folders');
+    if (savedFolders) {
+      setFolders(JSON.parse(savedFolders));
+    }
+  }, []);
+
+  // --- SAUVEGARDE HELPER ---
+  const saveDocs = (newDocs: Doc[]) => {
+    setDocuments(newDocs);
+    const docsToSave = newDocs.filter(d => d.id > 1000); 
+    localStorage.setItem('keepproof_docs', JSON.stringify(docsToSave));
   };
 
-  const getCurrentTitle = () => {
-    if (currentView === 'all') return 'Tous les fichiers';
-    return folders.find(f => f.id === currentView)?.name || 'Dossier';
+  const saveFolders = (newFolders: Folder[]) => {
+    setFolders(newFolders);
+    localStorage.setItem('keepproof_folders', JSON.stringify(newFolders));
   };
 
-  if (!isLoaded || loading) return <div className="bg-[#050507] min-h-screen text-white flex items-center justify-center">Chargement...</div>;
+  // --- ACTIONS FICHIERS ---
+  const handleDelete = (id: number) => {
+    if (confirm("⚠️ Attention : Vous allez retirer ce fichier de votre tableau de bord.\n\nNote : La preuve d'antériorité restera gravée à vie dans la Blockchain, mais vous perdrez le raccourci ici.\n\nContinuer ?")) {
+      saveDocs(documents.filter(doc => doc.id !== id));
+    }
+  };
+
+  const handleRename = (id: number, currentName: string) => {
+    const newName = prompt("Renommer le fichier (pour votre organisation uniquement) :", currentName);
+    if (newName) saveDocs(documents.map(doc => doc.id === id ? { ...doc, name: newName } : doc));
+  };
+
+  const handleMove = (id: number) => {
+    const folderList = folders.map(f => `- ${f.name} (tapez: ${f.id})`).join('\n');
+    const targetId = prompt(`Dans quel dossier ranger ce fichier ?\n\nCodes disponibles :\n${folderList}\n\n(Tapez 'all' pour le sortir de tout dossier)`);
+    
+    if (targetId) {
+      const foundFolder = folders.find(f => f.id === targetId || f.name.toLowerCase() === targetId.toLowerCase());
+      const finalId = foundFolder ? foundFolder.id : (targetId === 'all' ? undefined : null);
+
+      if (finalId !== null) {
+        saveDocs(documents.map(doc => doc.id === id ? { ...doc, folderId: finalId as string } : doc));
+      } else {
+        alert("Dossier introuvable.");
+      }
+    }
+  };
+
+  // --- ACTIONS DOSSIERS ---
+  const handleCreateFolder = () => {
+    const name = prompt("Nom du nouveau dossier (ex: Contrats, Photos...) :");
+    if (name) {
+      const newFolder = { id: name.toLowerCase().replace(/\s/g, '_'), name: name, color: 'bg-blue-500' };
+      saveFolders([...folders, newFolder]);
+    }
+  };
+
+  const handleDeleteFolder = (id: string) => {
+    if (confirm("Supprimer ce dossier ?\nLes fichiers qu'il contient ne seront PAS supprimés, ils reviendront dans 'Tous les fichiers'.")) {
+      saveFolders(folders.filter(f => f.id !== id));
+      setActiveFilter('all');
+      saveDocs(documents.map(d => d.folderId === id ? { ...d, folderId: undefined } : d));
+    }
+  };
+
+  const handleRenameFolder = (id: string, currentName: string) => {
+    const newName = prompt("Nouveau nom pour ce dossier :", currentName);
+    if (newName) {
+      saveFolders(folders.map(f => f.id === id ? { ...f, name: newName } : f));
+    }
+  };
+
+  // --- FILTRAGE ---
+  const filteredDocs = activeFilter === 'all' 
+    ? documents 
+    : documents.filter(doc => doc.folderId === activeFilter);
 
   return (
-    <div className="min-h-screen bg-[#050507] text-white flex flex-col font-sans">
-      {/* Header automatique via layout */}
+    <div className="min-h-screen bg-[#050507] text-white flex font-sans">
       
-      <div className="flex flex-1 flex-col md:flex-row pt-10 px-4 max-w-[1600px] mx-auto w-full gap-8">
-        
-        {/* --- NAVIGATION (Mobile: Horizontal Scroll | Desktop: Sidebar) --- */}
-        <aside className="w-full md:w-64 flex-shrink-0 flex flex-col">
-            {/* Bouton Principal */}
-            <button onClick={() => router.push('/new')} className="hidden md:block w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded-xl mb-6 transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)]">
-                + Nouvelle Preuve
-            </button>
+      {/* SIDEBAR */}
+      <aside className="w-72 hidden md:flex flex-col border-r border-white/5 p-6 min-h-screen bg-[#0A0A0F]">
+        <div className="mb-8 px-2" title="Retour à la page d'accueil">
+           <Link href="/" className="font-bold text-xl tracking-tight flex items-center gap-2">
+             <div className="w-8 h-8 bg-white text-black rounded-lg flex items-center justify-center font-bold">K</div>
+             KeepProof
+           </Link>
+        </div>
 
-            {/* --- NOUVEAU : Lien Litige REMONTÉ EN HAUT --- */}
-            <div className="hidden md:block mb-8">
-                <button 
-                    onClick={() => router.push('/litige')}
-                    className="w-full text-left px-4 py-3 rounded-xl bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white transition-all text-sm font-bold flex items-center justify-between shadow-lg shadow-red-900/40 group border border-red-400/20"
-                >
-                    <span className="flex items-center gap-2"><span>⚖️</span> Guide Litige</span>
-                    <span className="text-white/70 group-hover:text-white transition-colors">→</span>
-                </button>
-                <p className="text-[10px] text-gray-500 mt-2 px-2 leading-tight text-center">
-                    En cas de plagiat ou vol
-                </p>
+        <div className="mb-8" title="Cliquez ici pour certifier un nouveau document sur la Blockchain">
+          <Link href="/new" className="block w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-center transition shadow-lg shadow-blue-900/20 active:scale-95">
+            + Nouvelle Preuve
+          </Link>
+        </div>
+
+        <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-2 mb-4">EXPLORATEUR</div>
+
+        <nav className="space-y-1 flex-1 overflow-y-auto">
+          <div 
+            onClick={() => setActiveFilter('all')}
+            title="Afficher la liste complète de tous vos documents certifiés, sans filtre."
+            className={`px-4 py-3 rounded-lg font-medium flex items-center gap-3 cursor-pointer border transition-all ${
+              activeFilter === 'all' ? 'bg-white/10 text-white border-white/10' : 'text-gray-400 border-transparent hover:bg-white/5'
+            }`}
+          >
+             📁 Tous les fichiers
+          </div>
+          
+          <div className="pt-6 pb-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest px-2 mt-2">
+            VOS DOSSIERS
+          </div>
+          
+          {folders.map(folder => (
+            <div 
+              key={folder.id}
+              title={`Cliquez pour voir uniquement les documents du dossier "${folder.name}"`}
+              className={`group flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-all ${
+                 activeFilter === folder.id ? 'bg-white/10 text-white' : 'text-gray-400 hover:bg-white/5'
+              }`}
+              onClick={() => setActiveFilter(folder.id)}
+            >
+               <div className="flex items-center gap-2 truncate">
+                 <span className={`w-2 h-2 rounded-full ${folder.color} flex-shrink-0`}></span>
+                 <span className="truncate text-sm font-medium">{folder.name}</span>
+               </div>
+               
+               {/* BOUTONS DOSSIERS */}
+               <div className="flex items-center gap-1 opacity-100">
+                 <button 
+                   onClick={(e) => { e.stopPropagation(); handleRenameFolder(folder.id, folder.name); }}
+                   className="p-1.5 text-gray-500 hover:text-white hover:bg-white/10 rounded transition"
+                   title="Renommer ce dossier"
+                 >
+                   ✏️
+                 </button>
+                 <button 
+                   onClick={(e) => { e.stopPropagation(); handleDeleteFolder(folder.id); }}
+                   className="p-1.5 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded transition"
+                   title="Supprimer ce dossier (les fichiers seront conservés)"
+                 >
+                   🗑️
+                 </button>
+               </div>
             </div>
-            
-            {/* Menu Desktop */}
-            <nav className="hidden md:block space-y-2 flex-1 border-t border-white/5 pt-6">
-                <button onClick={() => setCurrentView('all')} className={`w-full text-left px-4 py-3 rounded-lg transition-all flex items-center gap-3 ${currentView === 'all' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}>
-                    <span>📁</span> Tous les fichiers
-                </button>
-                <div className="pt-6 pb-2 text-[10px] font-bold text-gray-600 uppercase tracking-widest px-2">Vos Dossiers</div>
-                {folders.map(f => (
-                    <button key={f.id} onClick={() => setCurrentView(f.id)} className={`w-full text-left px-4 py-2 rounded-lg transition-all text-sm ml-2 border-l-2 ${currentView === f.id ? 'text-blue-400 border-blue-500 bg-blue-500/5' : 'text-gray-500 border-transparent'}`}>
-                        {f.name}
-                    </button>
-                ))}
-                <button onClick={createFolder} className="text-xs text-gray-600 hover:text-blue-400 mt-4 px-4 flex items-center gap-2 transition uppercase"><span>+</span> Créer un dossier</button>
-            </nav>
+          ))}
+          
+          <button 
+            onClick={handleCreateFolder}
+            title="Créer une nouvelle catégorie pour organiser vos preuves"
+            className="w-full text-left text-gray-500 hover:text-blue-400 px-4 py-3 text-sm flex items-center gap-2 transition mt-2 hover:bg-white/5 rounded-lg border border-dashed border-white/5 hover:border-blue-500/30"
+          >
+             <span>+</span> Créer un dossier
+          </button>
+        </nav>
+      </aside>
 
-            {/* Menu MOBILE (Scroll Horizontal) */}
-            <div className="md:hidden overflow-x-auto flex gap-3 pb-4 pt-2 no-scrollbar">
-                <button onClick={() => setCurrentView('all')} className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold ${currentView === 'all' ? 'bg-blue-600 text-white' : 'bg-white/10 text-gray-400'}`}>
-                    📁 Tout
-                </button>
+      {/* MAIN CONTENT */}
+      <main className="flex-1 p-8 overflow-y-auto">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-bold text-white mb-1">
+              {activeFilter === 'all' ? 'Tous les fichiers' : folders.find(f => f.id === activeFilter)?.name || 'Dossier'}
+            </h1>
+            <p className="text-gray-400 text-sm">Gérez vos preuves sécurisées sur Polygon.</p>
+          </div>
+          <span title="Nombre total de documents dans cette vue" className="text-sm text-gray-500 bg-white/5 px-3 py-1 rounded-full border border-white/5 cursor-help">
+            {filteredDocs.length} fichier(s)
+          </span>
+        </div>
+
+        <div className="space-y-3">
+          {filteredDocs.length === 0 ? (
+            <div className="text-center py-20 border border-dashed border-white/10 rounded-2xl bg-white/5">
+              <p className="text-gray-500">Ce dossier est vide.</p>
+              <button onClick={() => setActiveFilter('all')} className="text-blue-400 text-sm mt-2 hover:underline">Voir tous les fichiers</button>
+            </div>
+          ) : (
+            filteredDocs.map((doc) => (
+              <div key={doc.id} className="group bg-[#0A0A0F] border border-white/5 hover:border-blue-500/30 rounded-xl p-4 flex items-center gap-4 transition-all hover:bg-white/[0.02]">
                 
-                {/* Bouton Litige Mobile Mis en avant */}
-                <button onClick={() => router.push('/litige')} className="whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold bg-red-600 text-white shadow-lg border border-red-400/30">
-                    ⚖️ Urgence Litige
-                </button>
+                <div title="Format du fichier : PDF" className="w-12 h-12 bg-[#1A1A20] rounded-lg flex items-center justify-center text-blue-400 font-bold text-xs border border-white/5 cursor-help">PDF</div>
 
-                {folders.map(f => (
-                    <button key={f.id} onClick={() => setCurrentView(f.id)} className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold ${currentView === f.id ? 'bg-blue-600 text-white' : 'bg-white/10 text-gray-400'}`}>
-                        {f.name}
-                    </button>
-                ))}
-            </div>
-        </aside>
-
-        {/* --- CONTENU PRINCIPAL --- */}
-        <main className="flex-1 bg-[#0A0A0F] md:rounded-2xl md:border md:border-white/5 p-4 md:p-8 min-h-[500px] mb-20 md:mb-0">
-            <header className="flex justify-between items-end mb-6 border-b border-white/5 pb-6">
-                <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2">
-                    {currentView !== 'all' && <span className="text-gray-600 font-normal hidden md:inline">Dossiers /</span>}
-                    {getCurrentTitle()}
-                </h1>
-                <div className="text-xs text-gray-500">{proofs.length} fichier(s)</div>
-            </header>
-            
-            {proofs.length === 0 ? (
-                <div className="text-center py-20 flex flex-col items-center opacity-50">
-                    <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-6 text-3xl grayscale">📂</div>
-                    <p className="text-gray-400 text-sm">Aucun fichier protégé.</p>
+                <div className="flex-1 min-w-0">
+                  <h3 
+                    className="font-bold text-white truncate text-sm md:text-base cursor-pointer hover:text-blue-400" 
+                    onClick={() => handleRename(doc.id, doc.name)}
+                    title="Cliquez pour renommer ce fichier"
+                  >
+                    {doc.name}
+                  </h3>
+                  <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
+                    <span title={`Date d'ancrage dans la Blockchain : ${doc.date}`}>{doc.date}</span>
+                    <span className="hidden sm:inline">•</span>
+                    <span title={`Empreinte numérique unique (Hash) : ${doc.hash}`} className="font-mono bg-white/5 px-1.5 rounded text-gray-400 cursor-help">
+                      {doc.hash.substring(0, 10)}...
+                    </span>
+                  </div>
                 </div>
-            ) : (
-                <div className="flex flex-col gap-3">
-                    {proofs.map((proof) => (
-                        <div key={proof.id} className="bg-[#111116] p-4 rounded-xl border border-white/5 flex flex-col md:flex-row justify-between md:items-center gap-4">
-                            <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 md:w-12 md:h-12 bg-[#1A1A20] rounded-lg border border-white/10 flex items-center justify-center text-blue-400 font-bold text-[10px] md:text-xs shadow-inner shrink-0">
-                                    {proof.filename.split('.').pop()?.toUpperCase() || 'DOC'}
-                                </div>
-                                <div className="overflow-hidden">
-                                    <div className="font-medium text-gray-200 text-sm truncate">{proof.filename}</div>
-                                    <div className="text-xs text-gray-600 flex gap-2 mt-1 font-mono">
-                                        <span>{new Date(proof.created_at).toLocaleDateString()}</span>
-                                        <span>•</span>
-                                        <span>{(proof.fileSize / 1024).toFixed(0)} KB</span>
-                                    </div>
-                                </div>
-                            </div>
 
-                            <div className="flex items-center justify-between md:justify-end gap-3 w-full md:w-auto mt-2 md:mt-0 pt-3 md:pt-0 border-t border-white/5 md:border-0">
-                                <span className="px-2 py-1 bg-green-500/10 text-green-500 text-[10px] font-bold uppercase rounded border border-green-500/20 md:hidden">
-                                    Protégé
-                                </span>
-                                <a 
-                                    href={`/pdf/${proof.id}`} 
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex-1 md:flex-none flex justify-center items-center gap-2 px-4 py-2 bg-[#1A1A20] active:bg-white/10 text-gray-400 text-xs font-bold rounded-lg border border-white/10"
-                                >
-                                    <DownloadIcon />
-                                    <span>Certificat</span>
-                                </a>
-                            </div>
-                        </div>
-                    ))}
+                {/* ACTIONS FICHIERS */}
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => handleMove(doc.id)} 
+                    className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-blue-400 transition" 
+                    title="Ranger ce fichier dans un dossier spécifique"
+                  >
+                    📂
+                  </button>
+                  <button 
+                    onClick={() => handleRename(doc.id, doc.name)} 
+                    className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition" 
+                    title="Renommer le fichier (Titre interne uniquement)"
+                  >
+                    ✏️
+                  </button>
+                  <button 
+                    onClick={() => handleDelete(doc.id)} 
+                    className="p-2 hover:bg-red-500/10 rounded-lg text-gray-400 hover:text-red-500 transition" 
+                    title="Supprimer de la liste (La preuve reste valide sur la Blockchain)"
+                  >
+                    🗑️
+                  </button>
+                  <button 
+                    title="Télécharger le certificat de preuve officiel (PDF)"
+                    className="hidden sm:flex px-4 py-2 bg-[#1A1A20] hover:bg-blue-600 border border-white/10 rounded-lg text-sm font-medium transition ml-2 text-white"
+                  >
+                    Certificat
+                  </button>
                 </div>
-            )}
-        </main>
 
-        {/* --- BOUTON FLOTTANT MOBILE (FAB) --- */}
-        <button 
-            onClick={() => router.push('/new')}
-            className="md:hidden fixed bottom-6 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-[0_4px_20px_rgba(37,99,235,0.5)] flex items-center justify-center text-3xl font-light z-40 active:scale-90 transition-transform"
-        >
-            +
-        </button>
-
-      </div>
+              </div>
+            ))
+          )}
+        </div>
+      </main>
     </div>
   );
 }

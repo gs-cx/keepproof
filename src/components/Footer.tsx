@@ -9,13 +9,27 @@ export default function Footer() {
           © {new Date().getFullYear()} KeepProof. Tous droits réservés.
         </p>
 
-        <div className="flex flex-wrap justify-center gap-8 items-center">
-          {/* Nouveau lien mis en avant */}
+        <div className="flex flex-wrap justify-center gap-6 md:gap-8 items-center">
+          {/* Lien Assistant Juridique (Mis en avant) */}
           <Link href="/litige" className="text-sm text-white font-bold hover:text-blue-400 transition-colors flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
             Guide Litige
           </Link>
 
+          {/* Liens Stratégiques */}
+          <Link href="/technology" className="text-sm hover:text-white transition-colors">
+             Notre Technologie
+          </Link>
+
+          <Link href="/security" className="text-sm hover:text-white transition-colors">
+             Sécurité
+          </Link>
+
+          <Link href="/comparatif" className="text-sm hover:text-white transition-colors">
+             Comparatif
+          </Link>
+
+          {/* Liens Légaux Classiques */}
           <Link href="/privacy" className="text-sm hover:text-white transition-colors">
             Confidentialité
           </Link>

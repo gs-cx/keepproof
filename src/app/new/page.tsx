@@ -1,94 +1,158 @@
-'use client';
+"use client";
+
 import React, { useState } from 'react';
-import { useUser } from "@clerk/nextjs";
-import { useRouter } from 'next/navigation';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
-import { createProofAction } from "../actions";
+import Link from 'next/link';
+import { useRouter } from 'next/navigation'; // Pour rediriger vers le dashboard après
 
 export default function NewProofPage() {
-  const { user } = useUser();
+  const [file, setFile] = useState<File | null>(null);
+  const [status, setStatus] = useState<'idle' | 'uploading' | 'hashing' | 'anchoring' | 'success'>('idle');
+  const [txHash, setTxHash] = useState('');
   const router = useRouter();
-  const [isComputing, setIsComputing] = useState(false);
-  const [msg, setMsg] = useState("Glissez votre fichier sur le disque");
 
-  const processFile = async (selectedFile: File) => {
-    if (!user) return;
-    setIsComputing(true);
-    setMsg("Analyse et sécurisation...");
+  // Simulation du processus de dépôt
+  const handleSimulateDeposit = async () => {
+    if (!file) return;
 
+    // 1. Simulation Upload
+    setStatus('uploading');
+    await new Promise(r => setTimeout(r, 800));
+
+    // 2. Simulation Hash
+    setStatus('hashing');
+    await new Promise(r => setTimeout(r, 800));
+
+    // 3. Simulation Blockchain
+    setStatus('anchoring');
+    
     try {
-        // 1. Calcul du Hash (Local)
-        const buffer = await selectedFile.arrayBuffer();
-        const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-        
-        const formData = new FormData();
-        formData.append('file', selectedFile);
-        formData.append('fileHash', hashHex);
+      // Simulation appel API
+      await new Promise(r => setTimeout(r, 1500));
 
-        setMsg("Écriture sur le disque du serveur...");
+      // Génération des fausses données
+      const fakeHash = "0x" + Math.random().toString(16).substring(2, 40) + "..." + Math.random().toString(16).substring(2, 5);
+      const today = new Date();
+      const dateStr = today.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      
+      setTxHash(fakeHash);
+      setStatus('success');
 
-        // 2. Appel Serveur
-        const result = await createProofAction(formData);
+      // --- SAUVEGARDE DANS LE NAVIGATEUR (Simulation BDD) ---
+      const newDoc = {
+        id: Date.now(), // Un ID unique basé sur l'heure
+        name: file.name,
+        size: (file.size / 1024).toFixed(0) + " KB",
+        date: dateStr,
+        hash: fakeHash,
+        status: "Certifié"
+      };
 
-        // 3. Vérification de la réponse (C'est ici que ça plantait)
-        if (!result) {
-            throw new Error("Le serveur n'a renvoyé aucune réponse.");
-        }
+      // On récupère la liste existante ou on crée une liste vide
+      const existingDocs = JSON.parse(localStorage.getItem('keepproof_docs') || '[]');
+      // On ajoute le nouveau au début
+      localStorage.setItem('keepproof_docs', JSON.stringify([newDoc, ...existingDocs]));
+      // -------------------------------------------------------
 
-        if (!result.success) {
-            alert("Erreur: " + result.error);
-            setIsComputing(false);
-            setMsg("Erreur. Réessayez.");
-            return;
-        }
-
-        setMsg("Sauvegarde terminée !");
-        
-        // Redirection vers le tableau de bord
-        router.push('/dashboard');
-
-    } catch (e: any) {
-        console.error(e);
-        alert("Erreur technique: " + (e.message || "Inconnue"));
-        setIsComputing(false);
-        setMsg("Erreur. Réessayez.");
+    } catch (e) {
+      alert("Erreur de simulation");
+      setStatus('idle');
     }
   };
 
   return (
-    <>
-      <Header />
-      <div className="min-h-screen bg-[#050507] text-white pt-32 px-6 flex flex-col items-center justify-center">
-        <h1 className="text-3xl font-bold mb-12">Nouvelle Protection</h1>
-        
-        <div className="relative group cursor-pointer flex flex-col items-center">
-            <input type="file" onChange={(e) => e.target.files?.[0] && processFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer z-20" disabled={isComputing} />
-            
-            {!isComputing ? (
-                <>
-                    <div className="relative w-64 h-64 mb-8 rounded-full bg-gradient-to-br from-gray-800 to-black flex items-center justify-center border-4 border-gray-800 transition-all duration-500 group-hover:shadow-[0_0_80px_rgba(37,99,235,0.8)] group-hover:border-blue-500/50 group-hover:scale-105 z-10">
-                        <div className="w-20 h-20 rounded-full bg-[#050507] border-4 border-gray-700 group-hover:border-blue-400/50 transition-colors duration-500 relative z-20 shadow-inner"></div>
-                        <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-700 group-hover:rotate-180 z-10"></div>
-                        <div className="absolute inset-4 rounded-full border border-white/5"></div>
-                        <div className="absolute inset-10 rounded-full border border-white/5"></div>
-                        <div className="absolute inset-16 rounded-full border border-white/5"></div>
-                    </div>
-
-                    <p className="text-2xl font-bold mb-3 transition-all duration-500 group-hover:text-blue-400">{msg}</p>
-                    <p className="text-gray-400 max-w-xs mx-auto leading-relaxed text-center transition-all duration-500 group-hover:text-gray-300">Vos fichiers sont chiffrés et stockés physiquement sur votre serveur privé.</p>
-                </>
-            ) : (
-                <div className="z-10 relative flex flex-col items-center">
-                    <div className="w-32 h-32 mb-8 rounded-full border-4 border-t-blue-500 border-b-blue-900 border-l-blue-900 border-r-blue-900 animate-spin shadow-[0_0_50px_rgba(37,99,235,0.4)]"></div>
-                    <p className="font-mono text-blue-400 text-lg animate-pulse">{msg}</p>
-                </div>
-            )}
-        </div>
+    <main className="min-h-screen bg-[#050507] text-white flex flex-col items-center justify-center p-4">
+      
+      {/* Bouton retour */}
+      <div className="absolute top-6 left-6 z-10">
+        <Link href="/dashboard" className="text-gray-400 hover:text-white transition flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full hover:bg-white/10">
+          ← Retour au Dashboard
+        </Link>
       </div>
-      <Footer />
-    </>
+
+      <div className="max-w-md w-full bg-[#0A0A0F] border border-white/10 rounded-2xl p-8 shadow-2xl relative overflow-hidden">
+        
+        <div className="text-center mb-10 relative z-10">
+          <h1 className="text-3xl font-bold mb-2">Déposer une preuve</h1>
+          <p className="text-gray-400 text-sm">Mode Simulation : Polygon Amoy</p>
+        </div>
+
+        {/* ÉTAT 1 : UPLOAD */}
+        {status === 'idle' && (
+          <div className="space-y-6 relative z-10">
+            <div className="border-2 border-dashed border-white/10 rounded-2xl p-10 text-center hover:border-blue-500/50 transition-all cursor-pointer bg-white/5 group">
+              <input 
+                type="file" 
+                onChange={(e) => setFile(e.target.files?.[0] || null)} 
+                className="hidden" 
+                id="file-upload"
+              />
+              <label htmlFor="file-upload" className="cursor-pointer block">
+                {file ? (
+                  <div className="text-blue-400 font-medium break-all bg-blue-500/10 p-2 rounded-lg">
+                    {file.name}
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-4xl mb-4 group-hover:scale-110 transition-transform">📄</div>
+                    <p className="text-sm text-gray-400 group-hover:text-gray-300">
+                      Cliquez pour choisir un fichier
+                    </p>
+                  </>
+                )}
+              </label>
+            </div>
+
+            <button
+              onClick={handleSimulateDeposit}
+              disabled={!file}
+              className={`w-full py-4 rounded-xl font-bold transition-all transform active:scale-95 ${
+                file 
+                  ? 'bg-white text-black hover:bg-gray-200 shadow-lg shadow-white/10' 
+                  : 'bg-white/5 text-gray-600 cursor-not-allowed'
+              }`}
+            >
+              Lancer la certification
+            </button>
+          </div>
+        )}
+
+        {/* ÉTAT 2 : CHARGEMENT */}
+        {(status === 'uploading' || status === 'hashing' || status === 'anchoring') && (
+          <div className="text-center py-10 space-y-6 relative z-10">
+            <div className="relative inline-block">
+              <div className="w-16 h-16 border-4 border-white/10 border-t-blue-500 rounded-full animate-spin" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-xl font-bold text-white">Traitement...</h3>
+              <p className="text-blue-400 text-sm animate-pulse">
+                {status === 'anchoring' ? "Écriture Blockchain..." : "Calcul de l'empreinte..."}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ÉTAT 3 : SUCCÈS */}
+        {status === 'success' && (
+          <div className="text-center py-4 space-y-6 relative z-10">
+            <div className="w-20 h-20 bg-green-500/10 text-green-500 rounded-full flex items-center justify-center mx-auto text-4xl mb-6 ring-1 ring-green-500/20">
+              ✓
+            </div>
+            
+            <div>
+              <h2 className="text-2xl font-bold text-white mb-2">Preuve Ancrée !</h2>
+              <p className="text-gray-400 text-sm">Disponible dans votre Dashboard.</p>
+            </div>
+
+            <button 
+              onClick={() => router.push('/dashboard')}
+              className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-bold transition shadow-lg shadow-blue-900/20"
+            >
+              Voir dans mon Dashboard →
+            </button>
+          </div>
+        )}
+
+      </div>
+    </main>
   );
 }
