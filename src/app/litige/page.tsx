@@ -5,9 +5,13 @@ import { useUser } from "@clerk/nextjs";
 
 export default function LitigePage() {
   const { user } = useUser();
-  const [activeTab, setActiveTab] = useState<'guide' | 'generator' | 'export'>('guide');
+  // Ajout de 'bailiff' dans les types d'onglets
+  const [activeTab, setActiveTab] = useState<'guide' | 'generator' | 'export' | 'bailiff'>('guide');
   const [copied, setCopied] = useState(false);
   const [isGeneratingZip, setIsGeneratingZip] = useState(false);
+  
+  // État pour la recherche locale
+  const [city, setCity] = useState('');
 
   // --- LOGIQUE GÉNÉRATEUR ---
   const [formData, setFormData] = useState({
@@ -79,6 +83,17 @@ Veuillez agréer, Madame, Monsieur, l'expression de mes salutations distinguées
     }, 2000);
   };
 
+  // --- LOGIQUE RECHERCHE HUISSIER ---
+  const handleLocalSearch = () => {
+    if (city.trim()) {
+      // Recherche ciblée sur Google Maps
+      window.open(`https://www.google.com/maps/search/commissaire+de+justice+${encodeURIComponent(city)}`, '_blank');
+    } else {
+      // Recherche "Autour de moi"
+      window.open('https://www.google.com/maps/search/commissaire+de+justice+autour+de+moi', '_blank');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#050507] text-white font-sans selection:bg-blue-500/30">
       
@@ -109,6 +124,12 @@ Veuillez agréer, Madame, Monsieur, l'expression de mes salutations distinguées
                 className={`px-5 py-2.5 rounded-full font-bold text-sm transition-all border flex items-center gap-2 ${activeTab === 'export' ? 'bg-purple-600 text-white border-purple-600 shadow-[0_0_15px_rgba(147,51,234,0.4)]' : 'bg-transparent text-gray-400 border-white/10 hover:border-white/30'}`}
             >
                 <span>📂</span> Pack Judiciaire
+            </button>
+            <button 
+                onClick={() => setActiveTab('bailiff')}
+                className={`px-5 py-2.5 rounded-full font-bold text-sm transition-all border flex items-center gap-2 ${activeTab === 'bailiff' ? 'bg-emerald-600 text-white border-emerald-600 shadow-[0_0_15px_rgba(16,185,129,0.4)]' : 'bg-transparent text-gray-400 border-white/10 hover:border-white/30'}`}
+            >
+                <span>⚖️</span> Saisir un Huissier
             </button>
           </div>
         </div>
@@ -165,6 +186,19 @@ Veuillez agréer, Madame, Monsieur, l'expression de mes salutations distinguées
                             → Préparer le Pack Judiciaire (Onglet 3)
                         </button>
                     </div>
+                    
+                    {/* ÉTAPE 4 (New) */}
+                    <div className="relative pl-16 md:pl-24">
+                        <div className="absolute left-0 md:left-4 top-0 w-8 h-8 md:w-9 md:h-9 bg-[#050507] border-2 border-emerald-500 rounded-full flex items-center justify-center font-bold text-sm text-emerald-500">4</div>
+                        <h3 className="text-2xl font-bold mb-3 text-white">Saisir un Huissier</h3>
+                        <p className="text-gray-400 leading-relaxed">
+                        Pour authentifier votre preuve, vous pouvez faire appel à un Commissaire de Justice (Constat).
+                        </p>
+                         <button onClick={() => setActiveTab('bailiff')} className="text-emerald-400 hover:text-emerald-300 underline text-sm font-bold">
+                            → Trouver un Huissier (Onglet 4)
+                        </button>
+                    </div>
+
                 </div>
              </div>
         )}
@@ -295,6 +329,95 @@ Veuillez agréer, Madame, Monsieur, l'expression de mes salutations distinguées
                 </div>
 
              </div>
+        )}
+
+        {/* ==================== ONGLET 4 : SAISIR UN HUISSIER (NOUVEAU) ==================== */}
+        {activeTab === 'bailiff' && (
+            <div className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-12">
+              
+              {/* BLOC 1 : LE NUMÉRIQUE (Mise en relation) */}
+              <div className="bg-gradient-to-br from-blue-900/40 to-black border border-blue-500/30 p-8 rounded-2xl relative overflow-hidden group hover:border-blue-500/50 transition-colors">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none"></div>
+                
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-600/20 text-3xl">
+                      ⚖️
+                    </div>
+                    <span className="bg-blue-600/20 text-blue-300 px-3 py-1 rounded-full text-xs font-bold uppercase border border-blue-500/30">Recommandé</span>
+                  </div>
+                  
+                  <h3 className="text-2xl font-bold text-white mb-2">Constat Internet (Tout pays)</h3>
+                  <p className="text-blue-200/80 mb-8 max-w-xl">
+                    Idéal pour le plagiat en ligne, réseaux sociaux ou sites web.
+                    Nous vous mettons en relation avec notre réseau de Commissaires de Justice "Cyber-spécialisés" pour transformer votre preuve Blockchain en <strong>Acte Authentique</strong>.
+                  </p>
+
+                  <div className="grid sm:grid-cols-2 gap-4 mb-8">
+                    <div className="flex items-center gap-3 text-sm text-gray-300">
+                      <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                      Valeur juridique maximale
+                    </div>
+                    <div className="flex items-center gap-3 text-sm text-gray-300">
+                      <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                      Intervention rapide (24h/48h)
+                    </div>
+                  </div>
+
+                  {/* BOUTON D'ACTION */}
+                  <a 
+                    href="mailto:constat@keepproof.com?subject=Demande%20de%20Constat%20Internet&body=Bonjour%2C%0A%0AJe%20souhaite%20un%20devis%20pour%20un%20constat%20internet.%0A%0A-%20URL%20%3A%20...%0A-%20Certificat%20KeepProof%20%3A%20OUI"
+                    className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all w-full sm:w-auto shadow-lg shadow-blue-600/20"
+                  >
+                    Demander une mise en relation
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
+                  </a>
+                </div>
+              </div>
+
+              {/* BLOC 2 : LE PHYSIQUE (Recherche Locale Google Maps) */}
+              <div className="bg-[#111116] border border-white/10 p-8 rounded-2xl relative">
+                <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                  <span>📍</span> Trouver un Huissier près de chez moi
+                </h3>
+                <p className="text-gray-400 mb-6 text-sm">
+                  Pour un constat physique (contrefaçon en magasin, concurrence déloyale sur le terrain), trouvez un Commissaire de Justice officiel dans votre ville.
+                </p>
+
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="relative flex-grow">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    </div>
+                    <input 
+                      type="text" 
+                      placeholder="Entrez votre ville ou code postal..." 
+                      className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleLocalSearch()}
+                    />
+                  </div>
+                  <button 
+                    onClick={handleLocalSearch}
+                    className="px-6 py-3 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
+                  >
+                    Rechercher
+                  </button>
+                </div>
+                
+                <div className="mt-4 flex justify-center sm:justify-start">
+                  <button 
+                    onClick={() => { setCity(''); setTimeout(() => window.open('https://www.google.com/maps/search/commissaire+de+justice+autour+de+moi', '_blank'), 100); }}
+                    className="text-xs text-gray-500 hover:text-white flex items-center gap-1 transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg>
+                    Utiliser ma position actuelle (Autour de moi)
+                  </button>
+                </div>
+              </div>
+
+            </div>
         )}
 
       </div>
