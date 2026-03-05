@@ -1,0 +1,76 @@
+"use client";
+
+import React from 'react';
+
+export default function MentionsLegales() {
+  return (
+    <div className="min-h-screen bg-[#050507] text-gray-300 font-sans pt-32 pb-20">
+      <div className="max-w-4xl mx-auto px-6">
+        
+        <h1 className="text-3xl md:text-4xl font-bold text-white mb-12 border-b border-white/10 pb-6">
+          Mentions Légales
+        </h1>
+
+        <div className="space-y-12 text-sm leading-relaxed">
+          
+          {/* 1. ÉDITEUR */}
+          <section>
+            <h2 className="text-xl font-bold text-white mb-4">1. Éditeur du site</h2>
+            <div className="bg-[#111116] p-6 rounded-xl border border-white/5">
+              <p className="mb-2">Le site internet <strong>KeepProof.com</strong> est édité par :</p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li><strong>Dénomination sociale :</strong> KeepProof SAS (Société par Actions Simplifiée)</li>
+                <li><strong>Capital social :</strong> 10 000 €</li>
+                <li><strong>RCS :</strong> Paris B 123 456 789</li>
+                <li><strong>Siège social :</strong> 10 Rue de la Paix, 75002 Paris, France</li>
+                <li><strong>N° de TVA Intracommunautaire :</strong> FR 12 123456789</li>
+                <li><strong>Directeur de la publication :</strong> [Votre Nom]</li>
+              </ul>
+            </div>
+          </section>
+
+          {/* 2. HÉBERGEUR */}
+          <section>
+		<h2 className="text-xl font-semibold mb-2 mt-6">2. Hébergement</h2>
+        	<div className="bg-gray-900 p-4 rounded-lg">
+          <p className="mb-2">Le site est hébergé par :</p>
+          <p className="font-bold">Hostinger International Ltd.</p>
+          <p>61 Lordou Vironos Street, 6023 Larnaca, Chypre</p>
+          <p>Site web : <a href="https://www.hostinger.fr" target="_blank" className="text-blue-400 hover:underline">https://www.hostinger.fr</a></p>
+        </div>
+
+
+
+
+
+
+
+          </section>
+
+          {/* 3. PROPRIÉTÉ INTELLECTUELLE */}
+          <section>
+            <h2 className="text-xl font-bold text-white mb-4">3. Propriété Intellectuelle</h2>
+            <p>
+              L'ensemble de ce site relève de la législation française et internationale sur le droit d'auteur et la propriété intellectuelle. 
+              Tous les droits de reproduction sont réservés, y compris pour les documents téléchargeables et les représentations iconographiques et photographiques.
+            </p>
+          </section>
+
+          {/* 4. DONNÉES PERSONNELLES */}
+          <section>
+            <h2 className="text-xl font-bold text-white mb-4">4. Protection des données (RGPD)</h2>
+            <p className="mb-4">
+              Conformément au Règlement Général sur la Protection des Données (RGPD), vous disposez d'un droit d'accès, de rectification et de suppression des données vous concernant.
+            </p>
+            <p>
+              <strong>Confidentialité des fichiers :</strong> KeepProof utilise une technologie de hachage local (Client-Side). 
+              Les fichiers originaux soumis par les utilisateurs pour certification ne sont <strong>JAMAIS</strong> transférés vers nos serveurs. 
+              Seule l'empreinte numérique (Hash) est traitée.
+            </p>
+          </section>
+
+        </div>
+      </div>
+    </div>
+  );
+}

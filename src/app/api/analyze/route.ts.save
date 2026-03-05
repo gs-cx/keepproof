@@ -1,0 +1,170 @@
+import { NextResponse } from 'next/server';
+import { MeiliSearch } from 'meilisearch';
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+// ⚠️ VOTRE CLÉ API GOOGLE ICI
+const GOOGLE_API_KEY = "VOTRE_CLE_API_GOOGLE_ICI"; 
+
+const genAI = new GoogleGenerativeAI(GOOGLE_AP);
+
+// CORRECTION : Plus de configuration compliquée. La dernière version gère ça.
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+const client = new MeiliSearch({
+  host: 'http://127.0.0.1:7700',
+  apiKey: 'MXMJooEjWtujkylMD8rXwzbFgUrHNTg4KA6Rk59oXFM=',
+});
+
+const BLACKLIST = [
+    "the", "this", "that", "logo", "brand", "image", "text", "scan", "features", "shape", 
+    "color", "background", "white", "black", "blue", "red", "yellow", "green", "gold", 
+    "silver", "design", "style", "modern", "classic", "french", "symbol", "icon", 
+    "vector", "illustration", "photo", "bank", "company", "name", "associated", "overall",
+    "simple", "effective", "message", "conveying", "displayed", "below", "center", 
+    "is", "a", "an", "of", "for", "in", "on", "at", "to", "by", "with", "from", "identify",
+    "output", "only", "read", "exact", "sign", "feature", "graphic", "element", "depicts",
+    "shows", "representing", "written", "contains", "consists"
+];
+
+function generateNGrams(words: string[]) {
+    const ngrams: string[] = [];
+    for (let i = 0; i < words.length; i++) {
+        ngrams.push(words[i]); 
+        if (i < words.length - 1) ngrams.push(`${words[i]} ${words[i+1]}`); 
+        if (i < words.length - 2) ngrams.push(`${words[i]} ${words[i+1]} ${words[i+2]}`); 
+        if (i < words.length - 3) ngrams.push(`${words[i]} ${words[i+1]} ${words[i+2]} ${words[i+3]}`); 
+    }
+    return ngrams;
+}
+
+function extractSmartKeywords(text: string) {
+    if (!text) return [];
+    const rawText = text.replace(/[^a-zA-Z0-9À-ÿ ]/g, " ");
+    const words = rawText.split(/\s+/);
+    const validWords: string[] = [];
+
+    words.forEach(w => {
+        const cleanW = w.trim();
+        const lowerW = cleanW.toLowerCase();
+        if (BLACKLIST.includes(lowerW)) return;
+        if (cleanW.length < 2 && isNaN(Number(cleanW))) return;
+        if (cleanW.length === 2 && !/^[A-Z0-9]/.test(cleanW)) return;
+        validWords.push(cleanW);
+    });
+
+    const candidates = generateNGrams(validWords);
+    const uniqueCandidates = [...new Set(candidates)];
+    return uniqueCandidates.sort((a, b) => b.length - a.length);
+}
+
+async function analyzeWithGemini(base64Image: string) {
+    try {
+        console.log("⚡ Appel Google Gemini 1.5 Flash (Latest SDK)...");
+        const cleanBase64 = base64Image.replace(/^data:image\/\w+;base64,/, "");
+        
+        const prompt = "Look at this image. Identify the brand or logo. Read strictly the text written inside. Output only the brand name found.";
+
+        const imagePart = {
+            inlineData: {
+                data: cleanBase64,
+                mimeType: "image/jpeg",
+            },
+        };
+
+        const result = await model.generateContent([prompt, imagePart]);
+        const response = await result.response;
+        const text = response.text();
+        
+        console.log(`✨ Gemini a vu : "${text.trim()}"`);
+        return text;
+
+    } catch (error: any) {
+        console.error("❌ Erreur Gemini:", error.message);
+        return null;
+    }
+}
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const { name, type, imageBase64 } = body; 
+    
+    console.log(`\n🔍 SCAN GOOGLE GEMINI : ${name}`);
+
+    let score = 100; 
+    let report: any[] = [];
+    let brandDetails: any[] = [];
+    let potentialBrands: string[] = [];
+
+    if (imageBase64 && type.startsWith('image/')) {
+        const geminiText = await analyzeWithGemini(imageBase64);
+        if (geminiText) {
+            extractSmartKeywords(geminiText).forEach(k => potentialBrands.push(k));
+        }
+    }
+
+    if (potentialBrands.length === 0) {
+        const cleanFileName = name.replace(/\.[^/.]+$/, "");
+        extractSmartKeywords(cleanFileName).forEach(k => potentialBrands.push(k));
+    }
+
+    if (potentialBrands.some(b => b.length > 5)) {
+        potentialBrands = potentialBrands.filter(b => b.toLowerCase() !== 'nike' && b.toLowerCase() !== 'latfl');
+    }
+    
+    potentialBrands = [...new Set(potentialBrands)].sort((a, b) => b.length - a.length);
+    console.log("📋 LISTE FINALE :", potentialBrands);
+
+    let matchFound = false;
+    for (const term of potentialBrands) {
+        if (term.length < 2) continue; 
+        try {
+            const index = client.index('brands');
+            const search = await index.search(term, { limit: 10 });
+            
+            if (search.hits.length > 0) {
+                let bestHit = null;
+                for (const hit of search.hits) {
+                    if (hit.name.toLowerCase() === term.toLowerCase()) {
+                        bestHit = hit; break;
+                    }
+                    if (term.length > 3 && hit.name.toLowerCase().includes(term.toLowerCase())) {
+                        if (!bestHit) bestHit = hit;
+                    }
+                }
+                
+                if (bestHit) {
+                    console.log(`🚨 ALERTE : "${bestHit.name}" (via "${term}")`);
+                    score = 1; 
+                    report.push({ label: `⛔ ALERTE : Marque "${bestHit.name}" détectée !`, status: "danger" });
+                    
+                    const dateDepot = bestHit.date || bestHit.registration_date || bestHit.date_depot || "Non renseignée";
+                    const classesNice = bestHit.classes || bestHit.nice_classes || bestHit.classe || "Non spécifiées";
+                    const titulaire = bestHit.owner || bestHit.titulaire || "Non identifié";
+
+                    brandDetails.push({ 
+                        texte: bestHit.name, 
+                        statut: 'Déposée (INPI)',
+                        date: dateDepot,
+                        classes: classesNice,
+                        titulaire: titulaire
+                    });
+                    
+                    matchFound = true;
+                    break; 
+                }
+            }
+        } catch (error) { console.error(error); }
+    }
+
+    if (!matchFound) {
+        report.push({ label: "Aucune correspondance trouvée", status: "success" });
+    }
+
+    return NextResponse.json({ score, report, details: brandDetails });
+
+  } catch (error) {
+    console.error("CRASH:", error);
+    return NextResponse.json({ error: 'Internal Error' }, { status: 500 });
+  }
+}

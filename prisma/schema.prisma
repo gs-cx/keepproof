@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions", "fullTextSearch"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // extensions = [vector]  <-- ON A RETIRÉ ÇA
+}
+
+model User {
+  id        String   @id
+  email     String   @unique
+  credits   Int      @default(3)
+  createdAt DateTime @default(now())
+  proofs    Proof[]
+  auditLogs AuditLog[]
+}
+
+model Proof {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  filename    String
+  fileHash    String
+  fileSize    Int
+  mimeType    String
+  storagePath String?
+  // vector      Unsupported("vector(384)")? <-- ON A RETIRÉ ÇA
+  status      String   @default("PROTECTED") 
+  txHash      String?  
+  tags        String[]
+  createdAt   DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String   
+  status    String   
+  details   String?
+  createdAt DateTime @default(now())
+}
+
+model Inpi_Design {
+  id                 String   @id @default(cuid())
+  num_enregistrement String?  @unique
+  titre              String?
+  description        String?
+  deposant           String?
+  date               String?
+  image_file         String?
+  statut             String?
+  locarno_class      String?
+  // vector             Unsupported("vector(384)")? <-- ON A RETIRÉ ÇA
+  createdAt          DateTime @default(now())
+
+  @@index([titre])
+  @@index([deposant])
+  @@map("inpi_design")
+}
