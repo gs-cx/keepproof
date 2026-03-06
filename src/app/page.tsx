@@ -28,7 +28,6 @@ export default function Home() {
             <br />avant qu'il ne soit trop tard.
           </h1>
           
-          {/* --- TEXTE SIMPLIFIÉ ICI --- */}
           <p className="text-xl text-gray-400 max-w-lg leading-relaxed">
             La manière la plus simple de <strong>prouver que vous êtes l'auteur</strong> et d'être <strong>alerté en cas de copie</strong>.
           </p>
@@ -40,8 +39,8 @@ export default function Home() {
               Protéger un fichier
             </Link>
             
-            {/* BOUTON SECONDAIRE : RECHERCHE */}
-            <Link href="/designs" className="group bg-white/5 text-white border border-white/10 px-8 py-4 rounded-xl text-lg font-medium hover:bg-white/10 transition-all flex items-center justify-center gap-3">
+            {/* BOUTON SECONDAIRE : RECHERCHE (Corrigé vers /search) */}
+            <Link href="/search" className="group bg-white/5 text-white border border-white/10 px-8 py-4 rounded-xl text-lg font-medium hover:bg-white/10 transition-all flex items-center justify-center gap-3">
               <Search className="w-5 h-5 text-gray-400 group-hover:text-white" />
               Explorer les archives
             </Link>
