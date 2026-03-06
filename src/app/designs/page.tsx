@@ -222,21 +222,27 @@ export default function DesignsPage() {
   const [results, setResults] = useState<Design[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedDesign, setSelectedDesign] = useState<Design | null>(null);
+  
+  // NOUVEAU : État pour gérer la page actuelle
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       fetchDesigns();
     }, 500);
     return () => clearTimeout(delayDebounceFn);
-  }, [query]);
+  }, [query, page]); // Se déclenche quand la recherche OU la page change
 
   const fetchDesigns = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&limit=24`);
+      // AJOUT du paramètre page dans la requête
+      const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&limit=24&page=${page}`);
       const data = await res.json();
       if (data.hits) {
         setResults(data.hits);
+      } else {
+        setResults([]);
       }
     } catch (error) {
       console.error("Erreur fetch:", error);
@@ -262,7 +268,10 @@ export default function DesignsPage() {
             <input
               type="text"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setPage(1); // Retour à la page 1 si on tape une nouvelle recherche
+              }}
               placeholder="Rechercher un meuble, une marque, un numéro..."
               className="w-full bg-[#0A0A0F] border border-white/10 rounded-full py-4 pl-6 pr-14 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-xl"
             />
@@ -283,7 +292,7 @@ export default function DesignsPage() {
           </div>
         ) : (
           <>
-            <p className="text-sm text-gray-500 mb-6">{results.length} résultats affichés</p>
+            <p className="text-sm text-gray-500 mb-6">{results.length > 0 ? `Résultats - Page ${page}` : 'Aucun résultat'}</p>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {results.map((design) => (
@@ -317,6 +326,31 @@ export default function DesignsPage() {
                 </div>
               ))}
             </div>
+
+            {/* NOUVEAU : SYSTÈME DE PAGINATION */}
+            {results.length > 0 && (
+              <div className="flex justify-center items-center gap-6 mt-16 border-t border-white/10 pt-8">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1 || loading}
+                  className="px-6 py-3 rounded-lg bg-[#1A1A20] border border-white/10 hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium"
+                >
+                  ← Précédent
+                </button>
+                
+                <span className="text-gray-400 font-medium">
+                  Page <span className="text-white">{page}</span>
+                </span>
+                
+                <button
+                  onClick={() => setPage((p) => p + 1)}
+                  disabled={results.length < 24 || loading}
+                  className="px-6 py-3 rounded-lg bg-blue-600 hover:bg-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium shadow-lg shadow-blue-900/20"
+                >
+                  Suivant →
+                </button>
+              </div>
+            )}
 
             {results.length === 0 && !loading && (
               <div className="text-center py-20 bg-[#111116] border border-white/5 rounded-2xl border-dashed">
