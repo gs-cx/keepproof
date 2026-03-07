@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   const query = searchParams.get('q');
 
   if (!query) {
-    return NextResponse.json({ results: [], error: "Aucune recherche demandée" });
+    return NextResponse.json({ hits: [], error: "Aucune recherche demandée" });
   }
 
   try {
@@ -15,49 +15,63 @@ export async function GET(request: Request) {
     const apiKey = process.env.CREAGUARD_API_KEY;
 
     if (!apiUrl) {
-      return NextResponse.json({ results: [], error: "URL OVH introuvable dans Cloudflare. Vérifiez vos variables d'environnement." });
+      return NextResponse.json({ hits: [], error: "URL OVH introuvable dans Cloudflare." });
     }
 
     const ovhUrl = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
-    const testUrl1 = `${ovhUrl}/api/search?q=${encodeURIComponent(query)}`;
     
+    // 🚨 LE MIRACLE EST ICI : On conserve TOUS les paramètres (q, limit, page) intacts !
+    const queryString = searchParams.toString(); 
+
+    // On teste les chemins les plus probables pour contourner le 404 de FastAPI
+    const pathsToTry = [
+        `/api/search?${queryString}`,
+        `/search?${queryString}`,
+        `/api/v1/search?${queryString}`
+    ];
+
     let res;
-    try {
-      // Cloudflare tente de joindre OVH
-      res = await fetch(testUrl1, {
-        method: 'GET',
-        headers: {
-          'x-api-key': apiKey || '',
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
+    let lastErrorText = "";
+
+    for (const path of pathsToTry) {
+        const fullUrl = `${ovhUrl}${path}`;
+        try {
+            res = await fetch(fullUrl, {
+                method: 'GET',
+                headers: {
+                    'x-api-key': apiKey || '',
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (res.ok) {
+                break; // Dès qu'un chemin fonctionne (Code 200), on arrête de chercher !
+            } else {
+                lastErrorText = await res.text();
+            }
+        } catch (e: any) {
+            lastErrorText = e.message;
         }
-      });
-    } catch (fetchError: any) {
-       // Si le serveur OVH est éteint, ou le port 8000 bloqué par un pare-feu
-       return NextResponse.json({ results: [], error: `Impossible de joindre OVH (Port fermé ou serveur éteint ?). Détail : ${fetchError.message}` });
     }
 
-    if (!res.ok) {
-      const testUrl2 = `${ovhUrl}/search?q=${encodeURIComponent(query)}`;
-      res = await fetch(testUrl2, {
-        method: 'GET',
-        headers: {
-          'x-api-key': apiKey || '',
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (!res.ok) {
-         const errorText = await res.text();
-         return NextResponse.json({ results: [], error: `OVH a refusé la connexion. Code HTTP: ${res.status}. Message: ${errorText}` });
-      }
+    // Si aucun des 3 chemins n'a fonctionné
+    if (!res || !res.ok) {
+      return NextResponse.json({ hits: [], error: `OVH a refusé la connexion (404/422). Dernier message: ${lastErrorText}` });
     }
 
     const data = await res.json();
-    return NextResponse.json({ results: data.results || data, success: true });
+    
+    // 🚨 FORMATAGE PARFAIT : On s'assure de renvoyer le mot "hits" que la page frontend réclame
+    let finalHits = [];
+    if (Array.isArray(data)) finalHits = data;
+    else if (data.hits) finalHits = data.hits;
+    else if (data.results) finalHits = data.results;
+    else finalHits = [data];
+
+    return NextResponse.json({ hits: finalHits, success: true });
 
   } catch (error: any) {
-    return NextResponse.json({ results: [], error: `Crash interne du Proxy: ${error.message}` });
+    return NextResponse.json({ hits: [], error: `Crash interne du Proxy Cloudflare: ${error.message}` });
   }
 }
