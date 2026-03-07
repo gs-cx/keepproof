@@ -5,8 +5,6 @@ export const runtime = 'edge';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get('q');
-  
-  // Rétablissement crucial de la pagination
   const limit = searchParams.get('limit') || '24';
   const page = searchParams.get('page') || '1';
 
@@ -15,56 +13,42 @@ export async function GET(request: Request) {
   }
 
   const apiKey = process.env.CREAGUARD_API_KEY || '';
+  const host = 'https://api.creaguard.com';
+  const paths = ['/api/search', '/search', '/api/search/', '/search/'];
   
-  // Le Bélier : On teste toutes les connexions réseau possibles
-  const hosts = [
-    'https://api.creaguard.com',
-    'http://51.91.196.115',
-    'http://51.91.196.115:8000'
-  ];
-
-  const queryString = `q=${encodeURIComponent(query)}&limit=${limit}&page=${page}`;
-
-  const paths = [
-    `/api/search?${queryString}`,
-    `/search?${queryString}`,
-    `/api/v1/search?${queryString}`
-  ];
-
   let lastError = "";
 
-  for (const host of hosts) {
-    for (const path of paths) {
-      const fullUrl = `${host}${path}`;
-      try {
-        const res = await fetch(fullUrl, {
-          method: 'GET',
-          headers: {
-            'x-api-key': apiKey,
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          
-          // Formatage blindé pour l'affichage de la page
-          let finalHits = [];
-          if (Array.isArray(data)) finalHits = data;
-          else if (data.hits) finalHits = data.hits;
-          else if (data.results) finalHits = data.results;
-          else finalHits = [data];
-
-          return NextResponse.json({ hits: finalHits, success: true });
-        } else {
-          lastError = `[${fullUrl} -> Code HTTP ${res.status}]`;
-        }
-      } catch (err: any) {
-        lastError = `[${fullUrl} -> Erreur réseau]`;
+  for (const path of paths) {
+    // 🛡️ TENTATIVE 1 : On essaie avec la pagination
+    let urlFull = `${host}${path}?q=${encodeURIComponent(query)}&limit=${limit}&page=${page}`;
+    try {
+      let res = await fetch(urlFull, {
+        headers: { 'x-api-key': apiKey, 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        let finalHits = Array.isArray(data) ? data : (data.hits || data.results || [data]);
+        return NextResponse.json({ hits: finalHits, success: true });
       }
+    } catch(e) {}
+
+    // 🛡️ TENTATIVE 2 : SURVIE (Si Python refuse la pagination, on lui donne la formule d'hier)
+    let urlPure = `${host}${path}?q=${encodeURIComponent(query)}`;
+    try {
+      let res = await fetch(urlPure, {
+        headers: { 'x-api-key': apiKey, 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        let finalHits = Array.isArray(data) ? data : (data.hits || data.results || [data]);
+        return NextResponse.json({ hits: finalHits, success: true });
+      } else {
+        lastError = `[${urlPure} -> Code HTTP ${res.status}]`;
+      }
+    } catch(e) {
+        lastError = `[${urlPure} -> Erreur réseau]`;
     }
   }
 
-  return NextResponse.json({ hits: [], error: `Toutes les connexions à OVH ont échoué. Dernier test: ${lastError}` });
+  return NextResponse.json({ hits: [], error: `Refus total du serveur OVH. Dernier test: ${lastError}` });
 }
