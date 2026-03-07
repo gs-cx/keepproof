@@ -19,11 +19,8 @@ export async function GET(request: Request) {
     }
 
     const ovhUrl = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
-    
-    // 🚨 LE MIRACLE EST ICI : On conserve TOUS les paramètres (q, limit, page) intacts !
-    const queryString = searchParams.toString(); 
+    const queryString = searchParams.toString();
 
-    // On teste les chemins les plus probables pour contourner le 404 de FastAPI
     const pathsToTry = [
         `/api/search?${queryString}`,
         `/search?${queryString}`,
@@ -46,7 +43,7 @@ export async function GET(request: Request) {
             });
 
             if (res.ok) {
-                break; // Dès qu'un chemin fonctionne (Code 200), on arrête de chercher !
+                break;
             } else {
                 lastErrorText = await res.text();
             }
@@ -55,14 +52,12 @@ export async function GET(request: Request) {
         }
     }
 
-    // Si aucun des 3 chemins n'a fonctionné
     if (!res || !res.ok) {
       return NextResponse.json({ hits: [], error: `OVH a refusé la connexion (404/422). Dernier message: ${lastErrorText}` });
     }
 
     const data = await res.json();
     
-    // 🚨 FORMATAGE PARFAIT : On s'assure de renvoyer le mot "hits" que la page frontend réclame
     let finalHits = [];
     if (Array.isArray(data)) finalHits = data;
     else if (data.hits) finalHits = data.hits;
