@@ -5,68 +5,66 @@ export const runtime = 'edge';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get('q');
+  
+  // Rétablissement crucial de la pagination
+  const limit = searchParams.get('limit') || '24';
+  const page = searchParams.get('page') || '1';
 
   if (!query) {
     return NextResponse.json({ hits: [], error: "Aucune recherche demandée" });
   }
 
-  try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-    const apiKey = process.env.CREAGUARD_API_KEY;
+  const apiKey = process.env.CREAGUARD_API_KEY || '';
+  
+  // Le Bélier : On teste toutes les connexions réseau possibles
+  const hosts = [
+    'https://api.creaguard.com',
+    'http://51.91.196.115',
+    'http://51.91.196.115:8000'
+  ];
 
-    if (!apiUrl) {
-      return NextResponse.json({ hits: [], error: "URL OVH introuvable dans Cloudflare." });
-    }
+  const queryString = `q=${encodeURIComponent(query)}&limit=${limit}&page=${page}`;
 
-    const ovhUrl = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
-    const queryString = searchParams.toString();
+  const paths = [
+    `/api/search?${queryString}`,
+    `/search?${queryString}`,
+    `/api/v1/search?${queryString}`
+  ];
 
-    const pathsToTry = [
-        `/api/search?${queryString}`,
-        `/search?${queryString}`,
-        `/api/v1/search?${queryString}`
-    ];
+  let lastError = "";
 
-    let res;
-    let lastErrorText = "";
+  for (const host of hosts) {
+    for (const path of paths) {
+      const fullUrl = `${host}${path}`;
+      try {
+        const res = await fetch(fullUrl, {
+          method: 'GET',
+          headers: {
+            'x-api-key': apiKey,
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          }
+        });
 
-    for (const path of pathsToTry) {
-        const fullUrl = `${ovhUrl}${path}`;
-        try {
-            res = await fetch(fullUrl, {
-                method: 'GET',
-                headers: {
-                    'x-api-key': apiKey || '',
-                    'Authorization': `Bearer ${apiKey}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+        if (res.ok) {
+          const data = await res.json();
+          
+          // Formatage blindé pour l'affichage de la page
+          let finalHits = [];
+          if (Array.isArray(data)) finalHits = data;
+          else if (data.hits) finalHits = data.hits;
+          else if (data.results) finalHits = data.results;
+          else finalHits = [data];
 
-            if (res.ok) {
-                break;
-            } else {
-                lastErrorText = await res.text();
-            }
-        } catch (e: any) {
-            lastErrorText = e.message;
+          return NextResponse.json({ hits: finalHits, success: true });
+        } else {
+          lastError = `[${fullUrl} -> Code HTTP ${res.status}]`;
         }
+      } catch (err: any) {
+        lastError = `[${fullUrl} -> Erreur réseau]`;
+      }
     }
-
-    if (!res || !res.ok) {
-      return NextResponse.json({ hits: [], error: `OVH a refusé la connexion (404/422). Dernier message: ${lastErrorText}` });
-    }
-
-    const data = await res.json();
-    
-    let finalHits = [];
-    if (Array.isArray(data)) finalHits = data;
-    else if (data.hits) finalHits = data.hits;
-    else if (data.results) finalHits = data.results;
-    else finalHits = [data];
-
-    return NextResponse.json({ hits: finalHits, success: true });
-
-  } catch (error: any) {
-    return NextResponse.json({ hits: [], error: `Crash interne du Proxy Cloudflare: ${error.message}` });
   }
+
+  return NextResponse.json({ hits: [], error: `Toutes les connexions à OVH ont échoué. Dernier test: ${lastError}` });
 }
