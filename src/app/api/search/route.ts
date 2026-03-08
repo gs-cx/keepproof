@@ -5,33 +5,24 @@ export const runtime = 'edge';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get('q');
-  
   const limit = searchParams.get('limit') || '24';
   const page = searchParams.get('page') || '1';
 
-  if (!query) {
-    return NextResponse.json({ hits: [], error: "Aucune recherche demandée" });
-  }
+  if (!query) return NextResponse.json({ hits: [], error: "Aucune recherche demandée" });
 
   const apiKey = process.env.CREAGUARD_API_KEY || '';
   const host = 'https://api.creaguard.com';
-  
   const urlFull = `${host}/recherche/marque/${encodeURIComponent(query)}?limit=${limit}&page=${page}&_nocache=${Date.now()}`;
 
   try {
     const res = await fetch(urlFull, {
       method: 'GET',
-      headers: { 
-        'x-api-key': apiKey, 
-        'Authorization': `Bearer ${apiKey}`, 
-        'Content-Type': 'application/json' 
-      },
+      headers: { 'x-api-key': apiKey, 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       cache: 'no-store'
     });
 
     if (res.ok) {
       const data = await res.json();
-      
       let finalHits: any[] = [];
       if (Array.isArray(data)) finalHits = data;
       else if (data.resultats) finalHits = data.resultats;
@@ -44,16 +35,15 @@ export async function GET(request: Request) {
         titre: `Marque : ${query.toUpperCase()}`,
         deposant: item.statut || "Statut inconnu",
         date: item.date || new Date().toISOString(),
-        // 🚨 ON IGNORE logo_disponible ET ON FORCE TOUJOURS LA DEMANDE D'IMAGE
-        image_file: item.numero || ""
+        // 🚨 LE FIX EST ICI : On réclame l'image UNIQUEMENT si Python dit qu'elle existe !
+        image_file: item.logo_disponible ? item.numero : ""
       }));
 
       return NextResponse.json({ hits: mappedHits, success: true });
     } else {
-      const errorText = await res.text();
-      return NextResponse.json({ hits: [], error: `Erreur OVH HTTP ${res.status}: ${errorText}` });
+      return NextResponse.json({ hits: [], error: `Erreur OVH HTTP ${res.status}` });
     }
   } catch (error: any) {
-    return NextResponse.json({ hits: [], error: `Impossible de joindre OVH: ${error.message}` });
+    return NextResponse.json({ hits: [], error: `Crash: ${error.message}` });
   }
 }
