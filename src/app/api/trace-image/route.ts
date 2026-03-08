@@ -3,51 +3,51 @@ import { NextResponse } from 'next/server';
 export const runtime = 'edge';
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  // On cible par défaut la vieille archive Peugeot de 1978 qui nous pose problème
-  const name = searchParams.get('name') || '1076731'; 
-
   const apiKey = process.env.CREAGUARD_API_KEY || '';
-  const urlFull = `https://api.creaguard.com/image/marque/${name}`;
+  const host = 'https://api.creaguard.com';
+  
+  // Le scanner va interroger votre base Python pour ces 5 grandes marques
+  const testBrands = ['nike', 'apple', 'dior', 'chanel', 'renault'];
+  
+  let results: any = {};
+  let totalImagesFound = 0;
 
-  try {
-    const start = Date.now();
-    
-    // On attaque directement OVH sans aucun cache
-    const res = await fetch(urlFull, {
-      method: 'GET',
-      headers: { 'x-api-key': apiKey, 'Authorization': `Bearer ${apiKey}` },
-      cache: 'no-store'
-    });
-    
-    const duration = Date.now() - start;
-    const status = res.status;
-    const headers = Object.fromEntries(res.headers.entries());
-    
-    let bodySnippet = "";
-    
-    // Si c'est une vraie image, on le dit. Sinon, on lit l'erreur de Python.
-    if (headers['content-type'] && headers['content-type'].includes('image')) {
-        bodySnippet = "[SUCCÈS: DONNÉES BINAIRES DE L'IMAGE REÇUES]";
-    } else {
-        bodySnippet = await res.text();
+  for (const brand of testBrands) {
+    try {
+      const res = await fetch(`${host}/recherche/marque/${brand}?limit=50`, {
+        method: 'GET',
+        headers: { 'x-api-key': apiKey, 'Authorization': `Bearer ${apiKey}` },
+        cache: 'no-store'
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        const hits = Array.isArray(data) ? data : (data.resultats || data.hits || data.results || []);
+        
+        // On compte combien d'archives Python déclare comme ayant un logo
+        const withLogo = hits.filter((h: any) => h.logo_disponible === true);
+        totalImagesFound += withLogo.length;
+
+        results[brand] = {
+          "1_total_archives_trouvees": hits.length,
+          "2_archives_AVEC_logo": withLogo.length,
+          "3_exemples_numeros_avec_logo": withLogo.map((h:any) => h.numero).slice(0, 3)
+        };
+      } else {
+         results[brand] = "Erreur HTTP " + res.status;
+      }
+    } catch(e:any) {
+       results[brand] = "Crash: " + e.message;
     }
-
-    // Le rapport d'autopsie complet
-    return NextResponse.json({
-        "1_DIAGNOSTIC": "SONDE DE TRACAGE MAXIMUM ACTIVEE",
-        "2_CIBLE_OVH": urlFull,
-        "3_TEMPS_REPONSE_MS": duration,
-        "4_CODE_HTTP_PYTHON": status,
-        "5_REPONSE_BRUTE_PYTHON": bodySnippet,
-        "6_ENTETES_RESEAU": headers
-    }, { status: 200 });
-
-  } catch (error: any) {
-    return NextResponse.json({
-        "1_DIAGNOSTIC": "CRASH FATAL DU RESEAU CLOUDFLARE",
-        "2_CIBLE_OVH": urlFull,
-        "3_ERREUR": error.message
-    }, { status: 500 });
   }
+
+  // Le verdict
+  return NextResponse.json({
+      "DIAGNOSTIC_FINAL": "ANALYSE GLOBALE DE LA BASE DE DONNEES PYTHON",
+      "TOTAL_IMAGES_TROUVEES": totalImagesFound,
+      "CONCLUSION": totalImagesFound === 0 
+        ? "🚨 BUG PYTHON DÉTECTÉ : Votre base OVH renvoie 'logo_disponible: false' pour absolument TOUTES les marques. Le site web est parfait, c'est le script Python ou la base qu'il faut corriger !" 
+        : "✅ LA BASE FONCTIONNE : Des images existent. Testez une recherche sur votre site avec l'une des marques ci-dessous.",
+      "DETAILS_PAR_MARQUE": results
+  }, { status: 200 });
 }

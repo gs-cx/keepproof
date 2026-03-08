@@ -16,15 +16,13 @@ interface Design {
   locarno?: string;
 }
 
-// --- LA CARTE AVEC DÉTECTEUR VISUEL ---
 const DesignCard = ({ design, onClick }: { design: Design, onClick: () => void }) => {
   const [imgError, setImgError] = useState(false);
 
   return (
     <div onClick={onClick} className="group bg-[#111116] border border-white/10 rounded-xl overflow-hidden hover:border-blue-500/50 hover:shadow-2xl hover:shadow-blue-900/10 transition-all cursor-pointer flex flex-col">
-      <div className="relative aspect-[4/3] bg-[#0a0a0e] overflow-hidden flex items-center justify-center">
+      <div className="relative aspect-[4/3] bg-[#0a0a0e] overflow-hidden flex items-center justify-center p-2">
         
-        {/* 1. L'image se charge avec succès */}
         {!imgError && design.image_file ? (
             <Image
               src={`/api/design-image?name=${design.image_file}`}
@@ -34,17 +32,15 @@ const DesignCard = ({ design, onClick }: { design: Design, onClick: () => void }
               unoptimized
               onError={() => setImgError(true)}
             />
-        // 2. DÉTECTEUR ROUGE : La base dit qu'il y a une image, mais OVH bloque
         ) : design.image_file && imgError ? (
-            <div className="flex flex-col items-center justify-center text-red-500/80 h-full w-full bg-[#1a0505]">
+            <div className="flex flex-col items-center justify-center text-red-500/80 h-full w-full bg-[#1a0505] rounded-md border border-red-500/20">
                <span className="text-3xl mb-2">⚠️</span>
-               <span className="text-[10px] uppercase tracking-widest text-center px-2">OVH refuse l'image<br/>({design.image_file})</span>
+               <span className="text-[10px] uppercase tracking-widest text-center px-2 font-mono">OVH refuse l'accès<br/>à l'image</span>
             </div>
-        // 3. DÉTECTEUR GRIS : La base dit qu'il n'y a pas d'image du tout
         ) : (
-            <div className="flex flex-col items-center justify-center text-gray-600 h-full w-full bg-[#0a0a0e]">
-               <span className="text-3xl opacity-50 mb-2">🖼️</span>
-               <span className="text-[10px] uppercase tracking-widest opacity-50 text-center px-2">Aucun logo<br/>(Base de données vide)</span>
+            // LE NOUVEAU DESIGN 100% TEXTE (Fini l'émoji qui ressemble à une erreur)
+            <div className="flex flex-col items-center justify-center text-gray-600 h-full w-full border-2 border-dashed border-white/5 rounded-lg">
+               <span className="text-[10px] uppercase tracking-widest opacity-50 text-center px-2 font-mono">Image non fournie<br/>par l'INPI</span>
             </div>
         )}
 
@@ -80,12 +76,11 @@ const DesignModal = ({ design, onClose }: { design: Design; onClose: () => void 
             ) : design.image_file && imgError ? (
                 <div className="flex flex-col items-center justify-center text-red-500">
                    <span className="text-4xl mb-3">⚠️</span>
-                   <span className="text-sm uppercase tracking-widest text-center px-2">Erreur serveur OVH</span>
+                   <span className="text-sm uppercase tracking-widest text-center px-2 font-mono">Erreur serveur OVH</span>
                 </div>
             ) : (
-                <div className="flex flex-col items-center justify-center text-gray-600">
-                   <span className="text-4xl mb-3 opacity-30">🖼️</span>
-                   <span className="text-sm uppercase tracking-widest opacity-40">Base de données vide</span>
+                <div className="flex flex-col items-center justify-center text-gray-600 border border-dashed border-white/10 w-full h-full rounded-xl m-4">
+                   <span className="text-sm uppercase tracking-widest opacity-40 font-mono">Image non fournie par l'INPI</span>
                 </div>
             )}
           </div>
@@ -191,7 +186,7 @@ export default function DesignsPage() {
 
     try {
       const url = `/api/search?q=${encodeURIComponent(query)}&limit=24&page=${page}&_browserCache=${Date.now()}`;
-      addLog(`[2] Requête à Cloudflare API: ${url}`);
+      addLog(`[2] Requête à Cloudflare API: /api/search?q=${encodeURIComponent(query)}&limit=24&page=${page}`);
       const res = await fetch(url);
       addLog(`[3] Réponse HTTP Cloudflare: ${res.status}`);
       const text = await res.text();
