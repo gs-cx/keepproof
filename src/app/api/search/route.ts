@@ -15,7 +15,7 @@ export async function GET(request: Request) {
   const apiKey = process.env.CREAGUARD_API_KEY || '';
   const host = 'https://api.creaguard.com';
   const paths = ['/api/search', '/search', '/api/search/', '/search/'];
-  
+
   let lastError = "";
 
   for (const path of paths) {
@@ -30,9 +30,9 @@ export async function GET(request: Request) {
         let finalHits = Array.isArray(data) ? data : (data.hits || data.results || [data]);
         return NextResponse.json({ hits: finalHits, success: true });
       }
-    } catch(e) {}
+    } catch(e: any) {}
 
-    // 🛡️ TENTATIVE 2 : SURVIE (Si Python refuse la pagination, on lui donne la formule d'hier)
+    // 🛡️ TENTATIVE 2 : SURVIE (Si Python refuse la pagination, on lui donne la formule simple)
     let urlPure = `${host}${path}?q=${encodeURIComponent(query)}`;
     try {
       let res = await fetch(urlPure, {
@@ -45,7 +45,7 @@ export async function GET(request: Request) {
       } else {
         lastError = `[${urlPure} -> Code HTTP ${res.status}]`;
       }
-    } catch(e) {
+    } catch(e: any) {
         lastError = `[${urlPure} -> Erreur réseau]`;
     }
   }
