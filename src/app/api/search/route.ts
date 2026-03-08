@@ -32,14 +32,24 @@ export async function GET(request: Request) {
     if (res.ok) {
       const data = await res.json();
       
-      // 🚨 LA CORRECTION EST ICI : On lit le tableau "resultats" en français !
       let finalHits = [];
       if (Array.isArray(data)) finalHits = data;
       else if (data.resultats) finalHits = data.resultats;
       else if (data.hits) finalHits = data.hits;
       else if (data.results) finalHits = data.results;
 
-      return NextResponse.json({ hits: finalHits, success: true });
+      // 🚨 LE TRADUCTEUR : On adapte le vocabulaire d'OVH pour l'affichage du site
+      const mappedHits = finalHits.map((item: any, idx: number) => ({
+        id: idx,
+        num_enregistrement: item.numero,
+        titre: `Marque : ${query.toUpperCase()}`,
+        deposant: item.statut || "Statut inconnu",
+        date: item.date,
+        // S'il y a un logo on envoie le numéro, sinon on laisse vide pour afficher l'icône par défaut
+        image_file: item.logo_disponible ? item.numero : ""
+      }));
+
+      return NextResponse.json({ hits: mappedHits, success: true });
     } else {
       const errorText = await res.text();
       return NextResponse.json({ hits: [], error: `Erreur OVH HTTP ${res.status}: ${errorText}` });
