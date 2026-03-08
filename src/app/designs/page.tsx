@@ -16,13 +16,15 @@ interface Design {
   locarno?: string;
 }
 
+// --- LA CARTE AVEC DÉTECTEUR VISUEL ---
 const DesignCard = ({ design, onClick }: { design: Design, onClick: () => void }) => {
   const [imgError, setImgError] = useState(false);
 
   return (
     <div onClick={onClick} className="group bg-[#111116] border border-white/10 rounded-xl overflow-hidden hover:border-blue-500/50 hover:shadow-2xl hover:shadow-blue-900/10 transition-all cursor-pointer flex flex-col">
       <div className="relative aspect-[4/3] bg-[#0a0a0e] overflow-hidden flex items-center justify-center">
-        {/* 🚨 Si l'image existe selon OVH, on l'affiche */}
+        
+        {/* 1. L'image se charge avec succès */}
         {!imgError && design.image_file ? (
             <Image
               src={`/api/design-image?name=${design.image_file}`}
@@ -32,12 +34,20 @@ const DesignCard = ({ design, onClick }: { design: Design, onClick: () => void }
               unoptimized
               onError={() => setImgError(true)}
             />
+        // 2. DÉTECTEUR ROUGE : La base dit qu'il y a une image, mais OVH bloque
+        ) : design.image_file && imgError ? (
+            <div className="flex flex-col items-center justify-center text-red-500/80 h-full w-full bg-[#1a0505]">
+               <span className="text-3xl mb-2">⚠️</span>
+               <span className="text-[10px] uppercase tracking-widest text-center px-2">OVH refuse l'image<br/>({design.image_file})</span>
+            </div>
+        // 3. DÉTECTEUR GRIS : La base dit qu'il n'y a pas d'image du tout
         ) : (
             <div className="flex flex-col items-center justify-center text-gray-600 h-full w-full bg-[#0a0a0e]">
                <span className="text-3xl opacity-50 mb-2">🖼️</span>
-               <span className="text-[10px] uppercase tracking-widest opacity-50">Aucun logo INPI</span>
+               <span className="text-[10px] uppercase tracking-widest opacity-50 text-center px-2">Aucun logo<br/>(Base de données vide)</span>
             </div>
         )}
+
         <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md text-xs font-mono px-2 py-1 rounded text-white border border-white/10">
           {new Date(design.date).getFullYear()}
         </div>
@@ -66,18 +76,16 @@ const DesignModal = ({ design, onClose }: { design: Design; onClose: () => void 
         <div className="w-full md:w-1/2 bg-black flex items-center justify-center p-6 relative">
           <div className="relative w-full h-64 md:h-full min-h-[300px] flex items-center justify-center">
             {!imgError && design.image_file ? (
-                <Image
-                  src={`/api/design-image?name=${design.image_file}`}
-                  alt={design.titre}
-                  fill
-                  className="object-contain"
-                  unoptimized
-                  onError={() => setImgError(true)}
-                />
+                <Image src={`/api/design-image?name=${design.image_file}`} alt={design.titre} fill className="object-contain" unoptimized onError={() => setImgError(true)} />
+            ) : design.image_file && imgError ? (
+                <div className="flex flex-col items-center justify-center text-red-500">
+                   <span className="text-4xl mb-3">⚠️</span>
+                   <span className="text-sm uppercase tracking-widest text-center px-2">Erreur serveur OVH</span>
+                </div>
             ) : (
                 <div className="flex flex-col items-center justify-center text-gray-600">
                    <span className="text-4xl mb-3 opacity-30">🖼️</span>
-                   <span className="text-sm uppercase tracking-widest opacity-40 font-mono">Aucun visuel numérisé</span>
+                   <span className="text-sm uppercase tracking-widest opacity-40">Base de données vide</span>
                 </div>
             )}
           </div>
@@ -183,17 +191,17 @@ export default function DesignsPage() {
 
     try {
       const url = `/api/search?q=${encodeURIComponent(query)}&limit=24&page=${page}&_browserCache=${Date.now()}`;
-      addLog(`[2] Requête à Cloudflare: ${url}`);
+      addLog(`[2] Requête à Cloudflare API: ${url}`);
       const res = await fetch(url);
-      addLog(`[3] Réponse HTTP: ${res.status}`);
+      addLog(`[3] Réponse HTTP Cloudflare: ${res.status}`);
       const text = await res.text();
-      addLog(`[4] Contenu brut: ${text.substring(0, 200)}...`);
+      addLog(`[4] Contenu brut reçu: ${text.substring(0, 200)}...`);
 
       if (res.ok) {
         const data = JSON.parse(text);
         if (data.hits) {
             setResults(data.hits);
-            addLog(`[5] SUCCÈS ! ${data.hits.length} images récupérées.`);
+            addLog(`[5] SUCCÈS ! ${data.hits.length} images récupérées depuis OVH.`);
         } else setResults([]);
       } else setResults([]);
     } catch (error: any) { setResults([]); } 
@@ -209,7 +217,7 @@ export default function DesignsPage() {
             <input type="text" value={query} onChange={(e) => { setQuery(e.target.value); setPage(1); }} placeholder="Rechercher une marque..." className="w-full bg-[#0A0A0F] border border-white/10 rounded-full py-4 pl-6 pr-14 text-white focus:outline-none focus:border-blue-500" />
           </div>
           {query && (
-            <div className="mt-8 bg-black/80 border border-white/10 p-4 rounded-xl text-left font-mono text-xs text-green-400 shadow-2xl whitespace-pre-wrap max-w-2xl mx-auto">
+            <div className="mt-8 bg-black/80 border border-white/10 p-4 rounded-xl text-left font-mono text-xs text-green-400 shadow-2xl whitespace-pre-wrap max-w-2xl mx-auto overflow-x-auto">
               {debugLog || "Chargement..."}
             </div>
           )}
