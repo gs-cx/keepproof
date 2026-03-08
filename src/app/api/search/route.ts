@@ -6,7 +6,6 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get('q');
   
-  // On garde la pagination au cas où le backend la gère implicitement
   const limit = searchParams.get('limit') || '24';
   const page = searchParams.get('page') || '1';
 
@@ -17,8 +16,6 @@ export async function GET(request: Request) {
   const apiKey = process.env.CREAGUARD_API_KEY || '';
   const host = 'https://api.creaguard.com';
   
-  // 🚨 LA CORRECTION ABSOLUE : L'adresse exacte lue dans votre serveur Python !
-  // On place le mot directement dans le lien, pas à la fin avec ?q=
   const urlFull = `${host}/recherche/marque/${encodeURIComponent(query)}?limit=${limit}&page=${page}&_nocache=${Date.now()}`;
 
   try {
@@ -29,18 +26,18 @@ export async function GET(request: Request) {
         'Authorization': `Bearer ${apiKey}`, 
         'Content-Type': 'application/json' 
       },
-      cache: 'no-store' // Pulvérisation du cache
+      cache: 'no-store'
     });
 
     if (res.ok) {
       const data = await res.json();
       
-      // Extraction des images
+      // 🚨 LA CORRECTION EST ICI : On lit le tableau "resultats" en français !
       let finalHits = [];
       if (Array.isArray(data)) finalHits = data;
+      else if (data.resultats) finalHits = data.resultats;
       else if (data.hits) finalHits = data.hits;
       else if (data.results) finalHits = data.results;
-      else finalHits = [data];
 
       return NextResponse.json({ hits: finalHits, success: true });
     } else {
