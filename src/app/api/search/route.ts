@@ -5,6 +5,8 @@ export const runtime = 'edge';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get('q');
+  
+  // On garde la pagination au cas où le backend la gère implicitement
   const limit = searchParams.get('limit') || '24';
   const page = searchParams.get('page') || '1';
 
@@ -15,66 +17,37 @@ export async function GET(request: Request) {
   const apiKey = process.env.CREAGUARD_API_KEY || '';
   const host = 'https://api.creaguard.com';
   
-  // On teste tous les formats d'URL pour être sûr de taper dans la bonne porte
-  const paths = [
-    '/api/search', 
-    '/search', 
-    '/api/v1/search',
-    '/api/search/', 
-    '/search/'
-  ];
+  // 🚨 LA CORRECTION ABSOLUE : L'adresse exacte lue dans votre serveur Python !
+  // On place le mot directement dans le lien, pas à la fin avec ?q=
+  const urlFull = `${host}/recherche/marque/${encodeURIComponent(query)}?limit=${limit}&page=${page}&_nocache=${Date.now()}`;
 
-  let logs = [];
-  let successData = null;
+  try {
+    const res = await fetch(urlFull, {
+      method: 'GET',
+      headers: { 
+        'x-api-key': apiKey, 
+        'Authorization': `Bearer ${apiKey}`, 
+        'Content-Type': 'application/json' 
+      },
+      cache: 'no-store' // Pulvérisation du cache
+    });
 
-  for (const path of paths) {
-    // 🧨 TENTATIVE 1 : Pagination + DESTRUCTEUR DE CACHE
-    let urlFull = `${host}${path}?q=${encodeURIComponent(query)}&limit=${limit}&page=${page}&_nocache=${Date.now()}`;
-    try {
-      let res = await fetch(urlFull, {
-        headers: { 'x-api-key': apiKey, 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-        cache: 'no-store' // Interdiction absolue de garder en mémoire
-      });
-      if (res.ok) {
-        successData = await res.json();
-        break; // On a trouvé la bonne porte, on sort !
-      } else {
-        let txt = await res.text();
-        logs.push(`[${path} (Paginé) -> ${res.status}: ${txt.substring(0, 20)}]`);
-      }
-    } catch(e: any) { logs.push(`[${path} -> Crash]`); }
+    if (res.ok) {
+      const data = await res.json();
+      
+      // Extraction des images
+      let finalHits = [];
+      if (Array.isArray(data)) finalHits = data;
+      else if (data.hits) finalHits = data.hits;
+      else if (data.results) finalHits = data.results;
+      else finalHits = [data];
 
-    // 🧨 TENTATIVE 2 : Survie (sans pagination) + DESTRUCTEUR DE CACHE
-    let urlPure = `${host}${path}?q=${encodeURIComponent(query)}&_nocache=${Date.now()}`;
-    try {
-      let res = await fetch(urlPure, {
-        headers: { 'x-api-key': apiKey, 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-        cache: 'no-store'
-      });
-      if (res.ok) {
-        successData = await res.json();
-        break;
-      } else {
-        let txt = await res.text();
-        logs.push(`[${path} (Simple) -> ${res.status}: ${txt.substring(0, 20)}]`);
-      }
-    } catch(e: any) { logs.push(`[${path} -> Crash]`); }
-  }
-
-  // SI CA MARCHE
-  if (successData) {
-      let finalHits = Array.isArray(successData) ? successData : (successData.hits || successData.results || [successData]);
       return NextResponse.json({ hits: finalHits, success: true });
+    } else {
+      const errorText = await res.text();
+      return NextResponse.json({ hits: [], error: `Erreur OVH HTTP ${res.status}: ${errorText}` });
+    }
+  } catch (error: any) {
+    return NextResponse.json({ hits: [], error: `Impossible de joindre OVH: ${error.message}` });
   }
-
-  // SI CA ECHOUE TOUJOURS EN 404 (Cas spécial FastAPI 0 résultat)
-  const all404 = logs.every(log => log.includes('404'));
-  if (all404) {
-      return NextResponse.json({ 
-          hits: [], 
-          error: `OVH a répondu 404 partout. Soit la route n'existe pas, soit OVH renvoie 404 quand il y a 0 résultat. Testez avec "langue". Historique: ${logs.join(' | ')}`
-      });
-  }
-
-  return NextResponse.json({ hits: [], error: `Echec global. Historique: ${logs.join(' | ')}` });
 }
