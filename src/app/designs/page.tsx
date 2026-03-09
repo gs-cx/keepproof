@@ -38,7 +38,6 @@ const DesignCard = ({ design, onClick }: { design: Design, onClick: () => void }
                <span className="text-[10px] uppercase tracking-widest text-center px-2 font-mono">OVH refuse l'accès<br/>à l'image</span>
             </div>
         ) : (
-            // LE NOUVEAU DESIGN 100% TEXTE (Fini l'émoji qui ressemble à une erreur)
             <div className="flex flex-col items-center justify-center text-gray-600 h-full w-full border-2 border-dashed border-white/5 rounded-lg">
                <span className="text-[10px] uppercase tracking-widest opacity-50 text-center px-2 font-mono">Image non fournie<br/>par l'INPI</span>
             </div>
@@ -170,9 +169,6 @@ export default function DesignsPage() {
   const [loading, setLoading] = useState(false);
   const [selectedDesign, setSelectedDesign] = useState<Design | null>(null);
   const [page, setPage] = useState(1);
-  const [debugLog, setDebugLog] = useState<string>('');
-
-  const addLog = (msg: string) => setDebugLog(prev => prev + msg + '\n');
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => { fetchDesigns(); }, 500);
@@ -181,26 +177,24 @@ export default function DesignsPage() {
 
   const fetchDesigns = async () => {
     if (!query) return;
-    setLoading(true); setDebugLog('');
-    addLog(`[1] Début recherche "${query}" (Page ${page})...`);
+    setLoading(true);
 
     try {
       const url = `/api/search?q=${encodeURIComponent(query)}&limit=24&page=${page}&_browserCache=${Date.now()}`;
-      addLog(`[2] Requête à Cloudflare API: /api/search?q=${encodeURIComponent(query)}&limit=24&page=${page}`);
       const res = await fetch(url);
-      addLog(`[3] Réponse HTTP Cloudflare: ${res.status}`);
       const text = await res.text();
-      addLog(`[4] Contenu brut reçu: ${text.substring(0, 200)}...`);
 
       if (res.ok) {
         const data = JSON.parse(text);
         if (data.hits) {
             setResults(data.hits);
-            addLog(`[5] SUCCÈS ! ${data.hits.length} images récupérées depuis OVH.`);
         } else setResults([]);
       } else setResults([]);
-    } catch (error: any) { setResults([]); } 
-    finally { setLoading(false); }
+    } catch (error: any) { 
+        setResults([]); 
+    } finally { 
+        setLoading(false); 
+    }
   };
 
   return (
@@ -209,13 +203,9 @@ export default function DesignsPage() {
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">Explorer les <span className="text-gray-400">Dessins & Modèles</span></h1>
           <div className="relative max-w-2xl mx-auto mt-8">
-            <input type="text" value={query} onChange={(e) => { setQuery(e.target.value); setPage(1); }} placeholder="Rechercher une marque..." className="w-full bg-[#0A0A0F] border border-white/10 rounded-full py-4 pl-6 pr-14 text-white focus:outline-none focus:border-blue-500" />
+            <input type="text" value={query} onChange={(e) => { setQuery(e.target.value); setPage(1); }} placeholder="Rechercher une marque (ex: apple, dior)..." className="w-full bg-[#0A0A0F] border border-white/10 rounded-full py-4 pl-6 pr-14 text-white focus:outline-none focus:border-blue-500" />
+            <div className="absolute right-4 top-4 p-1 text-gray-400">🔍</div>
           </div>
-          {query && (
-            <div className="mt-8 bg-black/80 border border-white/10 p-4 rounded-xl text-left font-mono text-xs text-green-400 shadow-2xl whitespace-pre-wrap max-w-2xl mx-auto overflow-x-auto">
-              {debugLog || "Chargement..."}
-            </div>
-          )}
         </div>
       </div>
 
@@ -228,11 +218,18 @@ export default function DesignsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {results.map((design) => <DesignCard key={design.id} design={design} onClick={() => setSelectedDesign(design)} />)}
             </div>
+            
             {results.length > 0 && (
               <div className="flex justify-center items-center gap-6 mt-16 border-t border-white/10 pt-8">
                 <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-6 py-3 rounded-lg bg-[#1A1A20] text-white disabled:opacity-50">← Précédent</button>
                 <span className="text-gray-400">Page <span className="text-white">{page}</span></span>
                 <button onClick={() => setPage(p => p + 1)} disabled={results.length < 24} className="px-6 py-3 rounded-lg bg-blue-600 text-white disabled:opacity-50">Suivant →</button>
+              </div>
+            )}
+
+            {results.length === 0 && !loading && query && (
+              <div className="text-center py-20 bg-[#111116] border border-white/5 rounded-2xl border-dashed">
+                <p className="text-gray-400 mb-2">Aucun résultat trouvé pour "{query}".</p>
               </div>
             )}
           </>
