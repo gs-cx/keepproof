@@ -32,11 +32,11 @@ export async function GET(request: Request) {
       const mappedHits = finalHits.map((item: any, idx: number) => ({
         id: idx,
         num_enregistrement: item.numero || "Inconnu",
-        titre: `Marque : ${query.toUpperCase()}`,
-        deposant: item.statut || "Statut inconnu",
+        titre: item.nom_marque || `Marque : ${query.toUpperCase()}`,
+        statut: item.statut || "Statut inconnu",
         date: item.date || new Date().toISOString(),
-        // 🚨 LE FIX EST ICI : On réclame l'image UNIQUEMENT si Python dit qu'elle existe !
-        image_file: item.logo_disponible ? item.numero : ""
+        image_file: item.logo_disponible ? item.numero : "",
+        code_office: item.code_office || "FR"
       }));
 
       return NextResponse.json({ hits: mappedHits, success: true });
