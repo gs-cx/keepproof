@@ -3,8 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { Loader2, Bot, Search, Briefcase, PenTool } from 'lucide-react';
 
-export const runtime = 'edge';
-
 interface Design {
   id: number;
   num_enregistrement: string;
