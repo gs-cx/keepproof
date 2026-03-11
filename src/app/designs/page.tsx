@@ -25,7 +25,6 @@ const DesignCard = ({ design, onClick }: { design: Design, onClick: () => void }
     <div onClick={onClick} className="group bg-[#111116] border border-white/10 rounded-xl overflow-hidden hover:border-blue-500/50 hover:shadow-2xl hover:shadow-blue-900/10 transition-all cursor-pointer flex flex-col">
       <div className="relative aspect-[4/3] bg-[#0a0a0e] overflow-hidden flex items-center justify-center p-2">
         {!imgError && design.image_file ? (
-            // 🚨 REMPLACEMENT PAR UNE BALISE <img> CLASSIQUE
             <img src={`/api/design-image?name=${design.image_file}`} alt={design.titre || 'Design'} className="w-full h-full object-contain opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500 p-4" onError={() => setImgError(true)} />
         ) : design.image_file && imgError ? (
             <div className="flex flex-col items-center justify-center text-red-500/80 h-full w-full bg-[#1a0505] rounded-md border border-red-500/20"><span className="text-3xl mb-2">⚠️</span><span className="text-[10px] uppercase tracking-widest text-center px-2 font-mono">OVH refuse l'accès</span></div>
@@ -56,7 +55,6 @@ const DesignModal = ({ design, onClose }: { design: Design; onClose: () => void 
         <div className="w-full md:w-1/2 bg-[#050507] flex flex-col relative border-r border-white/5">
           <div className="relative w-full h-64 md:h-full min-h-[300px] flex items-center justify-center p-6">
             {!imgError && design.image_file ? (
-                // 🚨 REMPLACEMENT PAR UNE BALISE <img> CLASSIQUE ICI AUSSI
                 <img src={`/api/design-image?name=${design.image_file}`} alt={design.titre} className="w-full h-full object-contain p-4" onError={() => setImgError(true)} />
             ) : (
                 <div className="flex flex-col items-center justify-center text-gray-600 border border-dashed border-white/10 w-full h-full rounded-xl m-4">
