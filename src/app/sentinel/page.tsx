@@ -37,7 +37,8 @@ export default function SentinelPage() {
       if (data.resultats) {
         setResults(data.resultats);
       } else {
-        alert("Erreur lors de l'analyse.");
+        alert("💥 Erreur Cloudflare : \n" + (data.details || data.error || "Erreur inconnue"));
+        console.error("Détails complets :", data);
       }
     } catch (error) {
       console.error(error);
